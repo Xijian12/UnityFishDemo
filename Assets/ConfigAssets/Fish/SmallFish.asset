@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab2035b874a86414b9d09538a8686dd1, type: 3}
+  m_Name: SmallFish
+  m_EditorClassIdentifier: Assembly-CSharp::FishConfig
+  fishType: 0
+  hp: 50
+  speed: 1
+  score: 5
+  prefab: {fileID: 9042648796299975068, guid: 61494bef52739c24b88386bebe12cc0c, type: 3}
+  spawnWeight: 60

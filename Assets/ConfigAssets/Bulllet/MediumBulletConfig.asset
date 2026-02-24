@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5048472320946684ea575319a03c76e8, type: 3}
+  m_Name: MediumBulletConfig
+  m_EditorClassIdentifier: Assembly-CSharp::BulletConfig
+  bulletType: 1
+  damage: 100
+  speed: 20
+  maxDistance: 40
+  prefab: {fileID: 7250875984985548821, guid: 0fe560474b2eb294091af0d09e0bfd07, type: 3}
