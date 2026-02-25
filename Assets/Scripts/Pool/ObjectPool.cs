@@ -80,6 +80,7 @@ public class ObjectPool<T> where T : Component, IPoolable
         if (obj == null) return;
         // 在这里调用对象池中对象的OnRecycle函数
         obj.OnRecycle();
+        //SetActive 操作昂贵，对象数据巨大时，建议直接使用 伪隐藏
         obj.gameObject.SetActive(false);
         pool.Enqueue(obj);
     }

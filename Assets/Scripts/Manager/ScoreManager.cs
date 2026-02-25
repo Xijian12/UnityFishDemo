@@ -55,7 +55,7 @@ public class ScoreManager : MonoBehaviour
     {
         if (scoreText != null)
         {
-            scoreText.text = $"{totalScore}";
+            scoreText.SetText($"{totalScore}");
         }
     }
 }

@@ -69,7 +69,7 @@ public class FishSpawner : MonoBehaviour
         {
             PoolManager.Instance.CreatePool<Fish>(
                 config.prefab,
-                initialSize: 200,
+                initialSize: 500,
                 maxSize: 1000,
                 parent: transform
             );

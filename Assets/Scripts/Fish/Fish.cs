@@ -9,6 +9,8 @@ public class Fish : MonoBehaviour, IPoolable
     private Vector3 startPoint;
     private Vector3 endPoint;
     private Vector3 controlPoint;
+    //»º´ætransform£¬ÒÔ¼õÉÙ¿ç²ã·ÃÎÊ
+    private Transform _cacheTransform;
 
     private float moveTime;
     private float duration;
@@ -21,7 +23,8 @@ public class Fish : MonoBehaviour, IPoolable
         this.endPoint = endPoint;
         this.currentHp = config.hp;
 
-        transform.position = startPoint;
+        _cacheTransform = transform;
+        _cacheTransform.position = startPoint;
 
         float distance = Vector3.Distance(startPoint, endPoint);
         duration = distance / config.speed;
@@ -40,11 +43,11 @@ public class Fish : MonoBehaviour, IPoolable
 
         moveTime += deltaTime;
         float t = Mathf.Clamp01(moveTime / duration);
-        transform.position = CalculateBezierPoint(t);
-        Vector3 direction = (CalculateBezierPoint(Mathf.Clamp01(t + 0.01f)) - transform.position).normalized;
+        _cacheTransform.position = CalculateBezierPoint(t);
+        Vector3 direction = (CalculateBezierPoint(Mathf.Clamp01(t + 0.01f)) - _cacheTransform.position).normalized;
         if (direction != Vector3.zero)
         {
-            transform.right = direction;
+            _cacheTransform.right = direction;
         }
 
         if (t >= 1f)
