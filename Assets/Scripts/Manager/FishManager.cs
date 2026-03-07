@@ -24,15 +24,15 @@ public class FishManager : MonoBehaviour
 
     void Update()
     {
-        // 获取当前帧的编号
+        // 获取当前帧的编号,每一帧只处理其中一组
         int frameCount = Time.frameCount;
 
-        // 每一帧只处理其中一组
+
         int targetGroup = frameCount % 2;
 
         for (int i = 0; i < ActiveFish.Count; i++)
         {
-            // 核心：只更新属于当前帧组的鱼
+            // 只更新属于当前帧组的鱼
             if (i % 2 == targetGroup)
             {
                 // 因为是每 2 帧更新一次，delta 必须乘以 2，否则鱼的移动速度会慢 2 倍

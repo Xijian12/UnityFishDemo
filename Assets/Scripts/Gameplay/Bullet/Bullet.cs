@@ -51,6 +51,7 @@ public class Bullet : MonoBehaviour, IPoolable
         foreach (Fish fish in activeFish)
         {
             if (fish == null) continue;
+            if (fish.IsDead) continue;
 
             if (Vector2.Distance(transform.position, fish.transform.position) < 0.5f)
             {

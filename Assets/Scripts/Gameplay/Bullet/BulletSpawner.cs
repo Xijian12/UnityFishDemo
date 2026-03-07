@@ -19,6 +19,8 @@ public class BulletSpawner : MonoBehaviour
     private readonly Dictionary<BulletType, BulletConfig> configMap = new();
     private readonly List<BulletType> spawnableTypes = new();
 
+    private bool isSpawn = false;
+
     void Start()
     {
         currentType = BulletType.SmallBullet;
@@ -81,9 +83,14 @@ public class BulletSpawner : MonoBehaviour
         }
     }
 
-    void Update()
+    void FixedUpdate()
     {
-        if (Input.GetMouseButtonDown(0) && Time.time >= lastShotTime + spawnInterval)
+        if (Input.GetMouseButtonDown(0))
+        {
+            isSpawn = !isSpawn;
+        }
+
+        if (isSpawn && Time.time >= lastShotTime + spawnInterval)
         {
             SpawnTargetBullet();
             lastShotTime = Time.time;
