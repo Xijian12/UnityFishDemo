@@ -1,154 +1,114 @@
 using UnityEngine;
 
 /// <summary>
-/// 顶视 3D 捕鱼相机：
-/// - 跟随一个 Pivot（例如场景中心或炮台）
-/// - 固定 45° 俯视角，可选小范围水平旋转与缩放
-/// - 无 GC 分配，输入逻辑可关闭，方便以后接入自定义控制或网络
+/// 固定俯视摄像机。
+/// - 位置固定 (0, 20, 0)，不每帧重算
+/// - 俯角固定 60°，仅允许绕 Y 轴小范围旋转
+/// - 支持慢镜头模式（使用 unscaledTime 不受 Time.timeScale 影响）
+/// - 与游戏逻辑解耦，不依赖、不影响其他系统
 /// </summary>
 public sealed class TopDownCameraController : MonoBehaviour
 {
-    [Header("跟随目标")]
-    [SerializeField] private Transform followTarget;
-    [SerializeField] private Vector3 lookAtOffset = Vector3.zero; // 例如 (0, -1.5f, 10f) 看向水体稍微偏前方
+    [Header("固定位置")]
+    [Tooltip("摄像机世界坐标，仅在初始化时应用，运行中不每帧重算")]
+    [SerializeField] private Vector3 fixedPosition = new Vector3(0f, 20f, 0f);
 
-    [Header("输入开关")]
-    [SerializeField] private bool enableInput = true;
-    [SerializeField] private bool allowRotate = true;
-    [SerializeField] private bool allowZoom = true;
+    [Header("固定俯角")]
+    [Tooltip("俯视角度（Pitch），单位：度。60 表示向下看 60°")]
+    [SerializeField] private float fixedPitch = 60f;
 
-    [Header("旋转设置")]
-    [SerializeField] private float rotateSpeed = 60f;      // 水平旋转速度（度/秒）
-    [SerializeField] private float maxYawOffset = 30f;     // 左右最大偏转角度
+    [Header("Y 轴旋转（微调）")]
+    [SerializeField] private bool enableYawInput = true;
+    [Tooltip("绕 Y 轴最大偏转角度（度），左右各 ±maxYaw")]
+    [SerializeField] private float maxYaw = 30f;
+    [Tooltip("Y 轴旋转速度（度/秒）")]
+    [SerializeField] private float yawSpeed = 60f;
 
-    [Header("缩放设置")]
-    [SerializeField] private float zoomSpeed = 0.2f;       // 缩放速度（鼠标滚轮）
-    [SerializeField] private float minZoom = 0.7f;         // 相机距离下限系数
-    [SerializeField] private float maxZoom = 1.3f;         // 相机距离上限系数
+    [Header("慢镜头")]
+    [Tooltip("启用时，摄像机更新使用 unscaledDeltaTime，不受 Time.timeScale 影响")]
+    [SerializeField] private bool useUnscaledTime = false;
 
-    // 初始相机相对 followTarget 的球坐标参数
-    private float _baseRadius;      // 水平距离
-    private float _baseHeight;      // 垂直高度
-    private float _baseYaw;         // 初始水平角度（绕 Y 轴）
-
-    // 当前偏移
-    private float _currentYawOffset;
-    private float _currentZoom = 1f;
-
-    private const float Deg2Rad = Mathf.PI / 180f;
+    private float _currentYaw;
+    private bool _positionApplied;
 
     private void Awake()
     {
-        if (followTarget == null)
-        {
-            return;
-        }
+        ApplyFixedTransform();
+    }
 
-        Vector3 offset = transform.position - followTarget.position;
-
-        _baseHeight = offset.y;
-
-        Vector3 horiz = offset;
-        horiz.y = 0f;
-        float horizMagnitude = horiz.magnitude;
-
-        if (horizMagnitude < 0.01f)
-        {
-            // 如果初始位置与目标几乎重合，给一个默认的 45° 俯视位置
-            _baseRadius = 20f;
-            _baseHeight = 20f;
-            _baseYaw = 0f;
-        }
-        else
-        {
-            _baseRadius = horizMagnitude;
-            _baseYaw = Mathf.Atan2(horiz.x, horiz.z) * Mathf.Rad2Deg;
-        }
-
-        _currentYawOffset = 0f;
-        _currentZoom = 1f;
+    private void Start()
+    {
+        ApplyFixedTransform();
     }
 
     private void LateUpdate()
     {
-        if (followTarget == null)
+        if (enableYawInput)
         {
-            return;
+            HandleYawInput();
         }
 
-        if (enableInput)
-        {
-            HandleInput();
-        }
-
-        UpdateCameraTransform();
+        ApplyRotationOnly();
     }
 
-    private void HandleInput()
+    /// <summary>
+    /// 仅初始化时设置位置，运行中不再修改。
+    /// </summary>
+    private void ApplyFixedTransform()
     {
-        if (allowRotate && Input.GetMouseButton(1))
-        {
-            float mouseX = Input.GetAxis("Mouse X");
-            if (mouseX != 0f)
-            {
-                _currentYawOffset += mouseX * rotateSpeed * Time.unscaledDeltaTime;
-                _currentYawOffset = Mathf.Clamp(_currentYawOffset, -maxYawOffset, maxYawOffset);
-            }
-        }
+        if (_positionApplied) return;
 
-        if (allowZoom)
-        {
-            float scroll = Input.mouseScrollDelta.y;
-            if (scroll != 0f)
-            {
-                _currentZoom -= scroll * zoomSpeed;
-                _currentZoom = Mathf.Clamp(_currentZoom, minZoom, maxZoom);
-            }
-        }
+        transform.position = fixedPosition;
+        _currentYaw = 0f;
+        ApplyRotationOnly();
+        _positionApplied = true;
     }
 
-    private void UpdateCameraTransform()
+    private void HandleYawInput()
     {
-        float yaw = _baseYaw + _currentYawOffset;
-        float radius = _baseRadius * _currentZoom;
-        float height = _baseHeight * _currentZoom;
+        if (!Input.GetMouseButton(1)) return;
 
-        float yawRad = yaw * Deg2Rad;
+        float dt = useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
+        float mouseX = Input.GetAxis("Mouse X");
+        if (Mathf.Abs(mouseX) < 0.001f) return;
 
-        // 计算水平位置（绕 Y 轴旋转）
-        float x = Mathf.Sin(yawRad) * radius;
-        float z = Mathf.Cos(yawRad) * radius;
-
-        Vector3 targetPos = followTarget.position;
-        Vector3 camPos = new Vector3(targetPos.x + x, targetPos.y + height, targetPos.z + z);
-
-        transform.position = camPos;
-
-        // 看向目标点（可添加偏移，让视线略微落在水体前方）
-        Vector3 lookTarget = targetPos + lookAtOffset;
-        Vector3 forward = lookTarget - camPos;
-
-        if (forward.sqrMagnitude > 0.0001f)
-        {
-            transform.rotation = Quaternion.LookRotation(forward.normalized, Vector3.up);
-        }
+        _currentYaw += mouseX * yawSpeed * dt;
+        _currentYaw = Mathf.Clamp(_currentYaw, -maxYaw, maxYaw);
     }
 
-    // 供外部系统（例如网络或关卡脚本）直接控制相机状态的 API
-    public void SetYawOffset(float yawOffset)
+    /// <summary>
+    /// 仅更新旋转，不修改位置。
+    /// </summary>
+    private void ApplyRotationOnly()
     {
-        _currentYawOffset = Mathf.Clamp(yawOffset, -maxYawOffset, maxYawOffset);
+        transform.rotation = Quaternion.Euler(fixedPitch, _currentYaw, 0f);
     }
 
-    public void SetZoomFactor(float zoomFactor)
+    #region 公共 API
+
+    /// <summary>
+    /// 设置 Y 轴偏转（供外部或慢镜头系统调用）。
+    /// </summary>
+    public void SetYaw(float yaw)
     {
-        _currentZoom = Mathf.Clamp(zoomFactor, minZoom, maxZoom);
+        _currentYaw = Mathf.Clamp(yaw, -maxYaw, maxYaw);
     }
 
-    public void SetFollowTarget(Transform target)
+    /// <summary>
+    /// 是否使用 unscaled 时间（慢镜头模式下不受 Time.timeScale 影响）。
+    /// </summary>
+    public void SetUseUnscaledTime(bool use)
     {
-        followTarget = target;
-        Awake(); // 重新计算基准参数（本脚本无复杂状态，直接复用初始化逻辑）
+        useUnscaledTime = use;
     }
+
+    /// <summary>
+    /// 重置到初始俯视角度（Y 轴归零）。
+    /// </summary>
+    public void ResetYaw()
+    {
+        _currentYaw = 0f;
+    }
+
+    #endregion
 }
-

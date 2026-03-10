@@ -9,17 +9,18 @@ public class Bullet : MonoBehaviour, IPoolable
     private Vector3 direction;
     private Vector3 startPos;
 
-    public void Init(BulletConfig config, Vector3 dir)
+    /// <summary>
+    /// 从炮口位置沿给定方向发射。
+    /// 方向通常在 XZ 平面（Y=0），由 CannonController 计算。
+    /// </summary>
+    public void Init(BulletConfig config, Vector3 spawnPos, Vector3 dir)
     {
         this.config = config ?? throw new System.ArgumentNullException(nameof(config));
-        this.direction = dir.normalized;
+        this.direction = dir.sqrMagnitude > 0.0001f ? dir.normalized : Vector3.forward;
+        this.startPos = spawnPos;
 
-        // 设置初始位置
-        transform.position = GetBottomCenterWorldPosition();
-        this.startPos = transform.position;
-
-        // 设置朝向
-        transform.up = this.direction;
+        transform.position = spawnPos;
+        transform.forward = this.direction;
 
         gameObject.SetActive(true);
     }
@@ -46,38 +47,30 @@ public class Bullet : MonoBehaviour, IPoolable
         CheckHit();
     }
 
-    //碰撞检测
+    private const float HitRadius = 0.8f;
+    private const float HitRadiusSq = HitRadius * HitRadius;
+
     void CheckHit()
     {
         var activeFish = FishManager.Instance?.ActiveFish;
         if (activeFish == null) return;
 
-        foreach (Fish fish in activeFish)
-        {
-            if (fish == null) continue;
-            if (fish.IsDead) continue;
+        Vector3 bulletPos = transform.position;
 
-            if (Vector2.Distance(transform.position, fish.transform.position) < 0.5f)
+        for (int i = 0; i < activeFish.Count; i++)
+        {
+            Fish fish = activeFish[i];
+            if (fish == null || fish.IsDead) continue;
+
+            if (!fish.gameObject.activeInHierarchy || !fish.isActiveAndEnabled) continue;
+            float sqrDist = (fish.transform.position - bulletPos).sqrMagnitude;
+            if (sqrDist < HitRadiusSq)
             {
                 fish.TakeDamage(config.damage);
                 PoolManager.Instance.Release(this, config.prefab);
                 return;
             }
         }
-    }
-
-    // 获取底部中心世界位置
-    private Vector3 GetBottomCenterWorldPosition()
-    {
-        Camera cam = Camera.main;
-        if (cam == null)
-        {
-            Debug.LogError("Main camera not found!");
-            return Vector3.zero;
-        }
-
-        Vector3 screenPoint = new(Screen.width * 0.5f, 0, cam.nearClipPlane + 1f);
-        return cam.ScreenToWorldPoint(screenPoint);
     }
 
     public void OnRecycle()

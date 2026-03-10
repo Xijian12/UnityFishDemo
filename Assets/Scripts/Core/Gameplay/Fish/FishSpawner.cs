@@ -69,8 +69,8 @@ public class FishSpawner : MonoBehaviour
         {
             PoolManager.Instance.CreatePool<Fish>(
                 config.prefab,
-                initialSize: 500,
-                maxSize: 1000,
+                initialSize: 50,
+                maxSize: 100,
                 parent: transform
             );
         }
@@ -108,17 +108,50 @@ public class FishSpawner : MonoBehaviour
         }
     }
 
-    // 调用fish对象中的生成鱼函数
+    // 活动范围：X∈[-15,15], Z∈[5,35]，Y 固定为 0（XZ 平面）
+    private const float FishXMin = -15f;
+    private const float FishXMax = 15f;
+    private const float FishZMin = 5f;
+    private const float FishZMax = 35f;
+
+    [Tooltip("贝塞尔控制点偏离幅度，越大曲线越弯")]
+    [SerializeField] private float curveStrength = 20f;
+
     void SpawnFish(FishConfig config)
     {
-        // 直接从对象池中获取鱼并发射
         Fish fish = PoolManager.Instance.Get<Fish>(config.prefab);
         if (fish == null) return;
 
-        Vector3 startPoint = new(-10f, Random.Range(-4f, 4f), 0f);
-        Vector3 endPoint = new(10f, Random.Range(-4f, 4f), 0f);
+        bool leftToRight = Random.value > 0.5f;
+        float z = Random.Range(FishZMin, FishZMax);
 
-        fish.Init(config, startPoint, endPoint);
+        Vector3 p0 = leftToRight
+            ? new Vector3(FishXMin, 0f, z)
+            : new Vector3(FishXMax, 0f, z);
+        float endZ = Mathf.Clamp(z + Random.Range(-3f, 3f), FishZMin, FishZMax);
+        Vector3 p3 = leftToRight
+            ? new Vector3(FishXMax, 0f, endZ)
+            : new Vector3(FishXMin, 0f, endZ);
+
+        GetCubicBezierControlPoints(p0, p3, leftToRight, out Vector3 p1, out Vector3 p2);
+        fish.Init(config, p0, p1, p2, p3);
+    }
+
+    /// <summary>
+    /// 根据起点、终点和方向生成三阶贝塞尔控制点。
+    /// 控制点在 XZ 平面垂直于连线的两侧，形成 S 形或弧线。
+    /// </summary>
+    private void GetCubicBezierControlPoints(Vector3 p0, Vector3 p3, bool leftToRight, out Vector3 p1, out Vector3 p2)
+    {
+        Vector3 mid = (p0 + p3) * 0.5f;
+        Vector3 dir = (p3 - p0).normalized;
+        Vector3 perp = Vector3.Cross(dir, Vector3.up);
+        float offset = Random.Range(-curveStrength, curveStrength);
+
+        p1 = mid + perp * offset;
+        p1.y = 0f;
+        p2 = mid - perp * offset * 0.7f;
+        p2.y = 0f;
     }
 
     // 销毁addressable资源

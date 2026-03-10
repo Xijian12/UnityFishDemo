@@ -16,5 +16,4 @@ MonoBehaviour:
   hp: 50
   speed: 1
   score: 5
-  prefab: {fileID: 9042648796299975068, guid: 61494bef52739c24b88386bebe12cc0c, type: 3}
-  spawnWeight: 60
+  prefab: {fileID: 8765251136916573930, guid: a78a3bf0a277d464aa20c43e4aecda70, type: 3}

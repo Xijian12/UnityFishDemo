@@ -16,4 +16,4 @@ MonoBehaviour:
   damage: 50
   speed: 15
   maxDistance: 40
-  prefab: {fileID: 7204771598230709914, guid: 7fdc9da38e6498f49b7073163ac25783, type: 3}
+  prefab: {fileID: 18638073777656301, guid: 82447c7d861fb9d419b2e36800109a95, type: 3}

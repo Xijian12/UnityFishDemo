@@ -6,59 +6,97 @@ public class Fish : MonoBehaviour, IPoolable
     public static event System.Action<int> OnFishKilled;
 
     private FishConfig config;
-    private Vector3 startPoint;
-    private Vector3 endPoint;
-    private Vector3 controlPoint;
-
-    private Transform _cacheTransform;
-
-    private float moveTime;
-    private float duration;
+    private FishMovement _fishMovement;
     private float currentHp;
 
     private SpriteRenderer spriteRenderer;
+    private Renderer _renderer;
+    private Material _cachedMaterial;
+    private Color _defaultColor;
+    private bool _hasDefaultColor;
     private bool isDying = false;
     private Coroutine damageRoutine;
+    private Coroutine dieRoutine;
 
     public bool IsDead { get; private set; } = false;
 
+    private void Awake()
+    {
+        CacheDefaultColor();
+    }
+
+    private void CacheDefaultColor()
+    {
+        if (spriteRenderer == null)
+            spriteRenderer = GetComponent<SpriteRenderer>();
+        if (_renderer == null)
+            _renderer = GetComponent<Renderer>();
+
+        if (spriteRenderer != null)
+        {
+            _defaultColor = spriteRenderer.color;
+            _hasDefaultColor = true;
+        }
+        else if (_renderer != null && _renderer.sharedMaterial != null)
+        {
+            _defaultColor = _renderer.sharedMaterial.color;
+            _hasDefaultColor = true;
+        }
+        else
+        {
+            _defaultColor = Color.white;
+            _hasDefaultColor = true;
+        }
+    }
+
     #region 初始化
 
-    public void Init(FishConfig config, Vector3 startPoint, Vector3 endPoint)
+    public void Init(FishConfig config, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
     {
         this.config = config;
-        this.startPoint = startPoint;
-        this.endPoint = endPoint;
         this.currentHp = config.hp;
 
-        _cacheTransform = transform;
-        _cacheTransform.position = startPoint;
-        _cacheTransform.localScale = Vector3.one;
+        if (_fishMovement == null)
+            _fishMovement = GetComponent<FishMovement>();
+        if (_fishMovement == null)
+        {
+            Debug.LogError("Fish 需要 FishMovement 组件！");
+            return;
+        }
 
-        float distance = Vector3.Distance(startPoint, endPoint);
-        duration = distance / config.speed;
-        moveTime = 0f;
-
-        Vector3 mid = (startPoint + endPoint) / 2f;
-        float curveOffset = Random.Range(-3f, 3f);
-        controlPoint = mid + Vector3.up * curveOffset;
+        transform.localScale = Vector3.one;
+        _fishMovement.SetPath(p0, p1, p2, p3, config.speed);
     }
 
     public void OnSpawn()
     {
         isDying = false;
+        IsDead = false;
+        _cachedMaterial = null;
 
         if (spriteRenderer == null)
             spriteRenderer = GetComponent<SpriteRenderer>();
+        if (_renderer == null)
+            _renderer = GetComponent<Renderer>();
+        if (_fishMovement == null)
+            _fishMovement = GetComponent<FishMovement>();
 
         transform.localScale = Vector3.one;
 
-        FishManager.Instance.AddFish(this);
+        RestoreVisualState();
+
+        FishManager.Instance?.AddFish(this);
     }
 
     public void OnRecycle()
     {
-        FishManager.Instance.RemoveFish(this);
+        StopAllCoroutines();
+        damageRoutine = null;
+        dieRoutine = null;
+
+        FishManager.Instance?.RemoveFish(this);
+        _fishMovement?.Reset();
+        RestoreVisualState();
     }
 
     #endregion
@@ -68,30 +106,12 @@ public class Fish : MonoBehaviour, IPoolable
     public void ManualUpdate(float deltaTime)
     {
         if (config == null || isDying) return;
+        if (_fishMovement == null) return;
 
-        moveTime += deltaTime;
-        float t = Mathf.Clamp01(moveTime / duration);
-
-        _cacheTransform.position = CalculateBezierPoint(t);
-
-        Vector3 nextPos = CalculateBezierPoint(Mathf.Clamp01(t + 0.01f));
-        Vector3 direction = (nextPos - _cacheTransform.position).normalized;
-
-        if (direction != Vector3.zero)
-            _cacheTransform.right = direction;
-
-        if (t >= 1f)
+        if (!_fishMovement.Tick(deltaTime))
         {
             SafeRelease();
         }
-    }
-
-    private Vector3 CalculateBezierPoint(float t)
-    {
-        float u = 1 - t;
-        return u * u * startPoint
-             + 2 * u * t * controlPoint
-             + t * t * endPoint;
     }
 
     #endregion
@@ -106,14 +126,24 @@ public class Fish : MonoBehaviour, IPoolable
         currentHp -= damage;
 
         if (damageRoutine != null)
+        {
             StopCoroutine(damageRoutine);
+            damageRoutine = null;
+        }
 
         damageRoutine = StartCoroutine(DamageEffect());
 
         if (currentHp <= 0)
         {
             isDying = true;
-            StartCoroutine(DieRoutine());
+
+            if (dieRoutine != null)
+            {
+                StopCoroutine(dieRoutine);
+                dieRoutine = null;
+            }
+
+            dieRoutine = StartCoroutine(DieRoutine());
             return true;
         }
 
@@ -122,18 +152,46 @@ public class Fish : MonoBehaviour, IPoolable
 
     private IEnumerator DamageEffect()
     {
-        if (spriteRenderer == null)
+        if (spriteRenderer != null)
+        {
+            Color originalColor = spriteRenderer.color;
+            spriteRenderer.color = Color.white;
+
+            yield return new WaitForSeconds(0.2f);
+
+            if (this == null || !gameObject.activeInHierarchy || spriteRenderer == null || IsDead)
+            {
+                damageRoutine = null;
+                yield break;
+            }
+
+            spriteRenderer.color = originalColor;
+            damageRoutine = null;
             yield break;
+        }
 
-        Color originalColor = spriteRenderer.color;
+        Material mat = GetSafeMaterial();
+        if (mat != null)
+        {
+            Color originalColor = mat.color;
+            mat.color = Color.white;
 
-        // 闪白
-        spriteRenderer.color = Color.white;
+            yield return new WaitForSeconds(0.2f);
 
-        yield return new WaitForSeconds(0.2f);
+            if (this == null || !gameObject.activeInHierarchy || IsDead)
+            {
+                damageRoutine = null;
+                yield break;
+            }
 
-        // 恢复原色
-        spriteRenderer.color = originalColor;
+            mat = GetSafeMaterial();
+            if (mat != null)
+            {
+                mat.color = originalColor;
+            }
+        }
+
+        damageRoutine = null;
     }
 
     #endregion
@@ -154,34 +212,142 @@ public class Fish : MonoBehaviour, IPoolable
 
         float duration = 0.3f;
         float timer = 0f;
-
         Vector3 startScale = transform.localScale;
         Vector3 endScale = startScale * 1.2f;
 
-        Color startColor = spriteRenderer.color;
-
-        while (timer < duration)
+        if (spriteRenderer != null)
         {
-            timer += Time.deltaTime;
-            float t = timer / duration;
+            Color startColor = spriteRenderer.color;
 
-            transform.localScale = Vector3.Lerp(startScale, endScale, t);
+            while (timer < duration)
+            {
+                if (this == null || !gameObject.activeInHierarchy || spriteRenderer == null)
+                {
+                    dieRoutine = null;
+                    yield break;
+                }
 
-            Color c = startColor;
-            c.a = Mathf.Lerp(1f, 0f, t);
-            spriteRenderer.color = c;
+                timer += Time.deltaTime;
+                float t = timer / duration;
 
-            yield return null;
+                transform.localScale = Vector3.Lerp(startScale, endScale, t);
+
+                Color c = startColor;
+                c.a = Mathf.Lerp(1f, 0f, t);
+                spriteRenderer.color = c;
+
+                yield return null;
+            }
+        }
+        else
+        {
+            Material mat = GetSafeMaterial();
+
+            if (mat != null)
+            {
+                Color startColor = mat.color;
+
+                while (timer < duration)
+                {
+                    if (this == null || !gameObject.activeInHierarchy)
+                    {
+                        dieRoutine = null;
+                        yield break;
+                    }
+
+                    mat = GetSafeMaterial();
+                    if (mat == null)
+                    {
+                        dieRoutine = null;
+                        yield break;
+                    }
+
+                    timer += Time.deltaTime;
+                    float t = timer / duration;
+
+                    transform.localScale = Vector3.Lerp(startScale, endScale, t);
+
+                    Color c = startColor;
+                    c.a = Mathf.Lerp(1f, 0f, t);
+                    mat.color = c;
+
+                    yield return null;
+                }
+            }
+            else
+            {
+                while (timer < duration)
+                {
+                    if (this == null || !gameObject.activeInHierarchy)
+                    {
+                        dieRoutine = null;
+                        yield break;
+                    }
+
+                    timer += Time.deltaTime;
+                    float t = timer / duration;
+                    transform.localScale = Vector3.Lerp(startScale, endScale, t);
+
+                    yield return null;
+                }
+            }
         }
 
+        dieRoutine = null;
         SafeRelease();
     }
 
     private void SafeRelease()
     {
-        if (config != null && config.prefab != null)
+        if (!gameObject.activeInHierarchy) return;
+
+        StopAllCoroutines();
+        damageRoutine = null;
+        dieRoutine = null;
+
+        if (config != null && config.prefab != null && PoolManager.Instance != null)
         {
             PoolManager.Instance.Release(this, config.prefab);
+        }
+    }
+
+    #endregion
+
+    #region 工具方法
+
+    private Material GetSafeMaterial()
+    {
+        if (_renderer == null)
+            _renderer = GetComponent<Renderer>();
+
+        if (_renderer == null)
+            return null;
+
+        if (_cachedMaterial == null)
+        {
+            _cachedMaterial = _renderer.material;
+        }
+
+        return _cachedMaterial;
+    }
+
+    private void RestoreVisualState()
+    {
+        if (!_hasDefaultColor)
+            CacheDefaultColor();
+
+        Color c = _defaultColor;
+        c.a = 1f;
+
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color = c;
+        }
+        else
+        {
+            Material mat = GetSafeMaterial();
+            if (mat != null)
+                mat.color = c;
         }
     }
 

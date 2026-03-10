@@ -1,59 +1,66 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+/// <summary>
+/// 子弹生成器：仅负责从对象池取出子弹并初始化参数。
+/// 不处理输入、不计算方向、不控制发射时机。
+/// 发射由 CannonController 调用。
+/// </summary>
 public class BulletSpawner : MonoBehaviour
 {
-    private float lastShotTime;
-
-    [SerializeField] private BulletType currentType;
-
-    // 在 Inspector 中按 BulletType 显示配置
+    [Header("子弹配置")]
     [SerializeField] private BulletConfig smallBulletConfig;
     [SerializeField] private BulletConfig mediumBulletConfig;
     [SerializeField] private BulletConfig bigBulletConfig;
 
-    // 限制子弹生成的频率
-    [SerializeField] private float spawnInterval = 1f;
+    private readonly Dictionary<BulletType, BulletConfig> _configMap = new();
 
-    // 存放所有不同种类子弹的配置信息
-    private readonly Dictionary<BulletType, BulletConfig> configMap = new();
-    private readonly List<BulletType> spawnableTypes = new();
-
-    private bool isSpawn = false;
-
-    void Start()
+    private void Start()
     {
-        currentType = BulletType.SmallBullet;
         BuildConfigMap();
         CreatePools();
-        BuildSpawnLists();
     }
 
-    void BuildConfigMap()
+    /// <summary>
+    /// 发射子弹。由 CannonController 调用，传入出生点、方向、子弹类型。
+    /// </summary>
+    /// <param name="spawnPos">出生点（通常为炮口位置）</param>
+    /// <param name="direction">发射方向（XZ 平面单位向量）</param>
+    /// <param name="bulletType">子弹类型</param>
+    /// <returns>是否成功发射</returns>
+    public bool Fire(Vector3 spawnPos, Vector3 direction, BulletType bulletType)
     {
-        configMap.Clear();
+        if (!_configMap.TryGetValue(bulletType, out BulletConfig config) || config == null)
+            return false;
 
+        Bullet bullet = PoolManager.Instance.Get<Bullet>(config.prefab);
+        if (bullet == null)
+        {
+            Debug.LogWarning("BulletSpawner: Failed to get bullet from pool.");
+            return false;
+        }
+
+        bullet.Init(config, spawnPos, direction);
+        return true;
+    }
+
+    private void BuildConfigMap()
+    {
+        _configMap.Clear();
         TryAddConfig(BulletType.SmallBullet, smallBulletConfig);
         TryAddConfig(BulletType.MediumBullet, mediumBulletConfig);
         TryAddConfig(BulletType.BigBullet, bigBulletConfig);
     }
 
-    void TryAddConfig(BulletType type, BulletConfig config)
+    private void TryAddConfig(BulletType type, BulletConfig config)
     {
         if (config != null)
-        {
-            // 确保 BulletConfig 的 bulletType 与字段匹配
-            if (config.bulletType != type)
-            {
-                Debug.LogWarning($"BulletConfig for {type} has mismatched bulletType: {config.bulletType}");
-            }
-            configMap[type] = config;
-        }
+            _configMap[type] = config;
     }
 
-    void CreatePools()
+    private void CreatePools()
     {
-        foreach (var kvp in configMap)
+        foreach (var kvp in _configMap)
         {
             PoolManager.Instance.CreatePool<Bullet>(
                 kvp.Value.prefab,
@@ -62,92 +69,5 @@ public class BulletSpawner : MonoBehaviour
                 parent: transform
             );
         }
-    }
-
-    // 添加所有类型的子弹要数组中
-    void BuildSpawnLists()
-    {
-        spawnableTypes.Clear();
-
-        // 按枚举顺序添加（保证确定性）
-        AddToSpawnList(BulletType.SmallBullet, smallBulletConfig);
-        AddToSpawnList(BulletType.MediumBullet, mediumBulletConfig);
-        AddToSpawnList(BulletType.BigBullet, bigBulletConfig);
-    }
-
-    void AddToSpawnList(BulletType type, BulletConfig config)
-    {
-        if (configMap.ContainsKey(type) && config != null)
-        {
-            spawnableTypes.Add(type);
-        }
-    }
-
-    void FixedUpdate()
-    {
-        if (Input.GetMouseButtonDown(0))
-        {
-            isSpawn = !isSpawn;
-        }
-
-        if (isSpawn && Time.time >= lastShotTime + spawnInterval)
-        {
-            SpawnTargetBullet();
-            lastShotTime = Time.time;
-        }
-    }
-
-    void SpawnTargetBullet()
-    {
-        if (spawnableTypes.Count == 0) return;
-
-        for (int i = 0; i < spawnableTypes.Count; i++)
-        {
-            // 从对象池中选择当前的子弹类型的子弹进行发射
-            if (currentType == spawnableTypes[i])
-            {
-                BulletType type = spawnableTypes[i];
-                SpawnBullet(configMap[type]);
-                return;
-            }
-        }
-    }
-
-    void SpawnBullet(BulletConfig config)
-    {
-        // 直接从对象池中获取子弹并发射
-        Bullet bullet = PoolManager.Instance.Get<Bullet>(config.prefab);
-        if (bullet == null)
-        {
-            Debug.LogWarning("Failed to get bullet from pool!");
-            return;
-        }
-
-        Camera cam = Camera.main;
-        if (cam == null) return;
-
-        // 鼠标世界位置
-        Vector3 mouseWorld = cam.ScreenToWorldPoint(Input.mousePosition);
-        mouseWorld.z = 0f;
-
-        // 发射点：屏幕底部中央
-        Vector3 spawnPos = GetBottomCenterWorldPosition();
-
-        // 方向：从发射点指向鼠标
-        Vector3 dir = mouseWorld - spawnPos;
-
-        // 初始化子弹（内部会设置位置、朝向、激活）
-        bullet.Init(config, dir);
-    }
-    private Vector3 GetBottomCenterWorldPosition()
-    {
-        Camera cam = Camera.main;
-        if (cam == null) return Vector3.zero;
-
-        Vector3 screenPoint = new(Screen.width * 0.5f, 0, 0);
-        Vector3 worldPos = cam.ScreenToWorldPoint(screenPoint);
-        // 确保在 2D 平面
-        worldPos.z = 0;
-        return worldPos;
     }
 }
