@@ -48,10 +48,10 @@ public class ScoreManager : MonoBehaviour
         EventBusClass.Instance.Unsubscribe<FishKilledEvent>(AddScore);
     }
 
-    public void AddScore(FishKilledEvent evt)
+    public void AddScore(FishKilledEvent fishKilledEvent)
     {
-        totalScore += evt.Score;
-        UpdateScoreDisplay();
+        totalScore += fishKilledEvent.Score;
+        UpdateScoreDisplay(totalScore);
 
         float time = Time.time;
 
@@ -66,56 +66,8 @@ public class ScoreManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 从世界位置生成金币  
+    /// 更新combo
     /// </summary>
-    /// <param name="worldPos"></param>
-    public void SpawnCoinFromWorld(Vector3 worldPos)
-    {
-        if (coinPrefab == null || scoreText == null || canvas == null)
-        {
-            Debug.LogError("ScoreManager引用未设置！");
-            return;
-        }
-
-        Camera cam = canvas.renderMode == RenderMode.ScreenSpaceOverlay
-            ? null
-            : canvas.worldCamera;
-
-        Vector3 screenPos = mainCamera.WorldToScreenPoint(worldPos);
-
-        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
-
-        Vector2 uiStartPos;
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            canvasRect,
-            screenPos,
-            cam,
-            out uiStartPos
-        );
-
-        RectTransform scoreRect = scoreText.GetComponent<RectTransform>();
-
-        Vector2 uiTargetPos;
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            canvasRect,
-            scoreRect.position,
-            cam,
-            out uiTargetPos
-        );
-
-        GameObject coin = Instantiate(coinPrefab, canvas.transform);
-
-        CoinUIFx fx = coin.GetComponent<CoinUIFx>();
-
-        if (fx == null)
-        {
-            Debug.LogError("CoinPrefab上没有CoinUIFx脚本！");
-            return;
-        }
-
-        fx.Init(uiStartPos, uiTargetPos);
-    }
-
     private void UpdateCombo()
     {
         if (comboText == null) return;
@@ -141,6 +93,10 @@ public class ScoreManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 淡出combo
+    /// </summary>
+    /// <returns></returns>
     private IEnumerator FadeOutCombo()
     {
         float duration = 0.8f;
@@ -223,14 +179,14 @@ public class ScoreManager : MonoBehaviour
     public void ResetScore()
     {
         totalScore = 0;
-        UpdateScoreDisplay();
+        UpdateScoreDisplay(totalScore);
     }
 
-    private void UpdateScoreDisplay()
+    private void UpdateScoreDisplay(int score)
     {
         if (scoreText != null)
         {
-            scoreText.SetText($"{totalScore}");
+            scoreText.SetText($"{score}");
         }
     }
 }

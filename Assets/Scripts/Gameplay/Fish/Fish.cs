@@ -201,17 +201,15 @@ public class Fish : MonoBehaviour, IPoolable
         IsDead = true;
         int score = config != null ? config.score : 0;
 
+        /// <summary>
+        /// 发布鱼死亡事件
+        /// </summary>
         EventBusClass.Instance.Publish(new FishKilledEvent()
         {
             FishType = config.fishType,
             Score = score,
             Position = transform.position
         });
-
-        if (ScoreManager.Instance != null)
-        {
-            ScoreManager.Instance.SpawnCoinFromWorld(transform.position);
-        }
 
         float duration = 0.3f;
         float timer = 0f;

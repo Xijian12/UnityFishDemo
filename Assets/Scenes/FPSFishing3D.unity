@@ -791,8 +791,8 @@ MonoBehaviour:
   muzzlePoint: {fileID: 1460966858}
   bulletSpawner: {fileID: 2044479101}
   fireMode: 1
-  fireInterval: 0.3
-  currentBulletType: 0
+  fireInterval: 0.1
+  currentBulletType: 2
   maxTrackDistance: 50
 --- !u!4 &1460966858
 Transform:
@@ -1540,6 +1540,61 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2071385919
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2071385921}
+  - component: {fileID: 2071385920}
+  m_Layer: 0
+  m_Name: UIFxManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2071385920
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2071385919}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d82b06929d7ab054f9487c1406a1dbee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIFxManager
+  uiCanvas: {fileID: 508790813}
+  worldCamera: {fileID: 2003607030}
+  scoreBoardTarget: {fileID: 1297103123}
+  floatingTextOffset: {x: 100, y: -25}
+  coinPrefab: {fileID: 633647016357115586, guid: 28c7a51c97de32b429d1fdbcc61e72fc, type: 3}
+  floatingTextPrefab: {fileID: 6083644540346864842, guid: 88bd80d4939206c49887aca16efd1efe, type: 3}
+  coinInitialPoolSize: 30
+  coinMaxPoolSize: 120
+  textInitialPoolSize: 20
+  textMaxPoolSize: 80
+  coinMoveDuration: 0.45
+--- !u!4 &2071385921
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2071385919}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1.75015, y: 10.7, z: 11.82472}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -1557,3 +1612,4 @@ SceneRoots:
   - {fileID: 1473620152}
   - {fileID: 2032483726}
   - {fileID: 1460966858}
+  - {fileID: 2071385921}
