@@ -38,10 +38,13 @@ public class BulletManager : MonoBehaviour
 
     void Update()
     {
-        for (int i = 0; i < ActiveBullets.Count; i++)
+        for (int i = ActiveBullets.Count - 1; i >= 0; i--)
         {
-            if (ActiveBullets[i] == null) continue;
-            ActiveBullets[i].ManualUpdate(Time.deltaTime);
+            Bullet bullet = ActiveBullets[i];
+            if (bullet != null)
+            {
+                bullet.ManualUpdate(Time.deltaTime);
+            }
         }
     }
 }

@@ -78,6 +78,11 @@ public class ObjectPool<T> where T : Component, IPoolable
     public void Release(T obj)
     {
         if (obj == null) return;
+        if (pool.Contains(obj))
+        {
+            Debug.LogError($"Object {obj.name} is already in pool.");
+            return;
+        }
         // 在这里调用对象池中对象的OnRecycle函数
         obj.OnRecycle();
         //SetActive 操作昂贵，对象数据巨大时，建议直接使用 伪隐藏

@@ -40,17 +40,17 @@ public class ScoreManager : MonoBehaviour
 
     private void OnEnable()
     {
-        Fish.OnFishKilled += AddScore;
+        EventBusClass.Instance.Subscribe<FishKilledEvent>(AddScore);
     }
 
     private void OnDisable()
     {
-        Fish.OnFishKilled -= AddScore;
+        EventBusClass.Instance.Unsubscribe<FishKilledEvent>(AddScore);
     }
 
-    public void AddScore(int points)
+    public void AddScore(FishKilledEvent evt)
     {
-        totalScore += points;
+        totalScore += evt.Score;
         UpdateScoreDisplay();
 
         float time = Time.time;
@@ -65,6 +65,10 @@ public class ScoreManager : MonoBehaviour
         UpdateCombo();
     }
 
+    /// <summary>
+    /// 从世界位置生成金币  
+    /// </summary>
+    /// <param name="worldPos"></param>
     public void SpawnCoinFromWorld(Vector3 worldPos)
     {
         if (coinPrefab == null || scoreText == null || canvas == null)
@@ -77,7 +81,7 @@ public class ScoreManager : MonoBehaviour
             ? null
             : canvas.worldCamera;
 
-        Vector3 screenPos = Camera.main.WorldToScreenPoint(worldPos);
+        Vector3 screenPos = mainCamera.WorldToScreenPoint(worldPos);
 
         RectTransform canvasRect = canvas.GetComponent<RectTransform>();
 

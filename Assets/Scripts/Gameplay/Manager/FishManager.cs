@@ -55,16 +55,19 @@ public class FishManager : MonoBehaviour
         // 获取当前帧的编号,每一帧只处理其中一组
         int frameCount = Time.frameCount;
 
-
         int targetGroup = frameCount % 2;
 
-        for (int i = 0; i < ActiveFish.Count; i++)
+        for (int i = ActiveFish.Count - 1; i >= 0; i--)
         {
+            Fish fish = ActiveFish[i];
             // 只更新属于当前帧组的鱼
             if (i % 2 == targetGroup)
             {
-                // 因为是每 2 帧更新一次，delta 必须乘以 2，否则鱼的移动速度会慢 2 倍
-                ActiveFish[i].ManualUpdate(Time.deltaTime * 2);
+                if (fish != null)
+                {
+                    // 因为是每 2 帧更新一次，delta 必须乘以 2，否则鱼的移动速度会慢 2 倍
+                    fish.ManualUpdate(Time.deltaTime * 2);
+                }
             }
         }
     }

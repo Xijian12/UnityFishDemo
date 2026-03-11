@@ -55,7 +55,13 @@ public class PoolManager : MonoBehaviour
         }
 
         ObjectPool<T> pool = pools[prefab] as ObjectPool<T>;
-        return pool.Get();
+        T obj = pool.Get();
+        if (obj == null)
+        {
+            Debug.LogError($"Get object from pool for {prefab.name} is null.");
+            return null;
+        }
+        return obj;
     }
 
 

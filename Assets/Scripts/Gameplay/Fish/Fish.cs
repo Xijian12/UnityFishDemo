@@ -3,8 +3,6 @@ using UnityEngine;
 
 public class Fish : MonoBehaviour, IPoolable
 {
-    public static event System.Action<int> OnFishKilled;
-
     private FishConfig config;
     private FishMovement _fishMovement;
     private float currentHp;
@@ -203,7 +201,12 @@ public class Fish : MonoBehaviour, IPoolable
         IsDead = true;
         int score = config != null ? config.score : 0;
 
-        OnFishKilled?.Invoke(score);
+        EventBusClass.Instance.Publish(new FishKilledEvent()
+        {
+            FishType = config.fishType,
+            Score = score,
+            Position = transform.position
+        });
 
         if (ScoreManager.Instance != null)
         {
