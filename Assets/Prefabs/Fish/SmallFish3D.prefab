@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 3937593776940673581}
   - component: {fileID: 6802964987988815847}
   - component: {fileID: -1606540506916981270}
+  - component: {fileID: -7508781155395121760}
+  - component: {fileID: -7736129478535644188}
   m_Layer: 0
   m_Name: SmallFish3D
   m_TagString: Untagged
@@ -140,3 +142,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cf7302cf65cd90a44a1613dfec0d7a17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FishMovement
+--- !u!114 &-7508781155395121760
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8765251136916573930}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6403c05b43f1f654ab4f2756c9f3fbb2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FishCombat
+--- !u!114 &-7736129478535644188
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8765251136916573930}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09cbd9b24f716e8418b3a77e11e323f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FishVisual

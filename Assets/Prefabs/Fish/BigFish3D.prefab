@@ -14,6 +14,8 @@ GameObject:
   - component: {fileID: 5850368278616849324}
   - component: {fileID: -8388812440802325531}
   - component: {fileID: -6355595203707042333}
+  - component: {fileID: -7545394351842834648}
+  - component: {fileID: -5423745437909662660}
   m_Layer: 0
   m_Name: BigFish3D
   m_TagString: Untagged
@@ -138,3 +140,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cf7302cf65cd90a44a1613dfec0d7a17, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FishMovement
+--- !u!114 &-7545394351842834648
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5400549897852037545}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6403c05b43f1f654ab4f2756c9f3fbb2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FishCombat
+--- !u!114 &-5423745437909662660
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5400549897852037545}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09cbd9b24f716e8418b3a77e11e323f7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FishVisual
