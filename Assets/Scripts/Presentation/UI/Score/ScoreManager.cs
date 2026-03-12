@@ -9,10 +9,7 @@ public class ScoreManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI scoreText;
     [SerializeField] private TextMeshProUGUI comboText;
     [SerializeField] private TextMeshProUGUI niceText;
-    [SerializeField] private Camera mainCamera;
-
-    [SerializeField] private GameObject coinPrefab;
-    [SerializeField] private Canvas canvas;
+    [SerializeField] private TopDownCameraController topDownCamera;
 
     private Coroutine comboRoutine;
     private int totalScore = 0;
@@ -32,8 +29,8 @@ public class ScoreManager : MonoBehaviour
             return;
         }
 
-        if (mainCamera == null)
-            mainCamera = Camera.main;
+        if (topDownCamera == null && Camera.main != null)
+            topDownCamera = Camera.main.GetComponent<TopDownCameraController>();
 
         ResetScore();
     }
@@ -85,8 +82,9 @@ public class ScoreManager : MonoBehaviour
 
         if (comboCount >= 3)
         {
-            if (mainCamera != null)
-                StartCoroutine(ScreenShake());
+            // 震动相机
+            if (topDownCamera != null)
+                topDownCamera.PlayShake();
 
             if (niceText != null)
                 StartCoroutine(ShowNice());
@@ -119,33 +117,6 @@ public class ScoreManager : MonoBehaviour
         }
 
         comboText.gameObject.SetActive(false);
-    }
-
-    private IEnumerator ScreenShake()
-    {
-        Vector3 originalPos = mainCamera.transform.position;
-
-        float duration = 0.2f;
-        float magnitude = 0.1f;
-        float timer = 0f;
-
-        while (timer < duration)
-        {
-            timer += Time.deltaTime;
-
-            float offsetX = Random.Range(-1f, 1f) * magnitude;
-            float offsetY = Random.Range(-1f, 1f) * magnitude;
-
-            mainCamera.transform.position = new Vector3(
-                originalPos.x + offsetX,
-                originalPos.y + offsetY,
-                originalPos.z
-            );
-
-            yield return null;
-        }
-
-        mainCamera.transform.position = originalPos;
     }
 
     private IEnumerator ShowNice()
