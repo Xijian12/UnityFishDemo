@@ -151,9 +151,7 @@ MonoBehaviour:
   scoreText: {fileID: 1297103124}
   comboText: {fileID: 1706191050}
   niceText: {fileID: 1730363248}
-  mainCamera: {fileID: 2003607030}
-  coinPrefab: {fileID: 6863121071701778500, guid: fa2e1b1a753eab743b96556eb373d44c, type: 3}
-  canvas: {fileID: 491369580}
+  topDownCamera: {fileID: 2003607032}
 --- !u!4 &133881448
 Transform:
   m_ObjectHideFlags: 0
@@ -790,7 +788,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CannonController
   muzzlePoint: {fileID: 1460966858}
   bulletSpawner: {fileID: 2044479101}
-  fireMode: 1
+  fireMode: 0
   fireInterval: 0.1
   currentBulletType: 2
   maxTrackDistance: 50
@@ -1449,6 +1447,8 @@ MonoBehaviour:
   maxYaw: 30
   yawSpeed: 60
   useUnscaledTime: 0
+  defaultShakeDuration: 0.2
+  defaultShakeMagnitude: 0.1
 --- !u!1 &2032483724
 GameObject:
   m_ObjectHideFlags: 0

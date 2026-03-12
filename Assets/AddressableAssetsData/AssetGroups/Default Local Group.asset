@@ -14,32 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
   m_GroupName: Default Local Group
   m_GUID: ab1812ab7d9b38e409df9434d5bda96d
-  m_SerializeEntries:
-  - m_GUID: 239e710d7b26856489696f5d0a12d9a7
-    m_Address: Assets/Scripts/Bullet/SmallBulletConfig.asset
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 2ca469f69c1d3c442b94b2bbca9a91f8
-    m_Address: Assets/Scripts/Bullet/MediumBulletConfig.asset
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 3ef24631ef67ca74b917b39e4ab8fb5e
-    m_Address: Assets/Scripts/Bullet/BigBulletConfig.asset
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 51034a70afc606d41807486df3d140f4
-    m_Address: Assets/Scripts/Asset/FishDatabase.asset
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 519fae1ac28ca9d4b98eda222c91d23f
-    m_Address: Assets/Scripts/Fish/BigFish.asset
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
+  m_SerializeEntries: []
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 4ec6864a9f9953545960e6a7237e7086, type: 2}
   m_SchemaSet:
