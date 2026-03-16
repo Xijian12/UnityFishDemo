@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5048472320946684ea575319a03c76e8, type: 3}
-  m_Name: BigBulletConfig
+  m_Name: MediumBulletConfig
   m_EditorClassIdentifier: Assembly-CSharp::BulletConfig
-  bulletType: 2
-  damage: 50
-  speed: 20
+  bulletType: 1
+  damage: 20
+  speed: 40
   maxDistance: 50
-  prefab: {fileID: 6145281271159349400, guid: 9802c575e9ffee242ac5d3e05cdf7551, type: 3}
+  prefab: {fileID: 5042238598056933956, guid: 5234229cde5729e4bbbe0b8a808407c6, type: 3}

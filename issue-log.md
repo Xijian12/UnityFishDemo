@@ -210,3 +210,169 @@
 3. 增加“普通金币 / 特殊金币”分发字段，避免后续改动牵动主链路。
 4. 补一份玩法事件流文档（事件名、触发点、消费者）。
 
+---
+
+## 11. 编译报错：`EventBusClass` 命名空间不可见
+
+### 问题
+- `CoinUIFx.cs` 出现编译错误：`The type or namespace name 'EventBusClass' could not be found...`。
+
+### 根因
+- UI 特效脚本直接依赖事件总线实现细节，导致命名空间/程序集引用脆弱。
+- 视觉层与事件发布层耦合过深。
+
+### 解决
+- 取消 `CoinUIFx` 对 `EventBusClass` 的直接依赖。
+- 改为 `CoinUIFx -> UIFxManager.PublishCoinArrived(...) -> EventBusClass.Publish(...)`。
+- 由 `UIFxManager` 统一承接事件发布。
+
+### 状态
+- 已修复并通过编译。
+
+---
+
+## 12. 鱼对象生命周期职责混乱（`Fish` vs `FishCombat` vs `FishVisual`）
+
+### 问题
+- 鱼对象拆分后，生命状态、事件发布、视觉协程管理边界不清，出现逻辑分散与重复状态风险。
+
+### 根因
+- 聚合对象与子模块职责没有严格分层。
+
+### 解决
+- `FishCombat`：仅维护 HP 与死亡状态（`IsDead/IsDying`、`TryEnterDeath`）。
+- `FishVisual`：仅负责受击/死亡视觉表现与复用重置。
+- `Fish`：作为编排层，统一受伤流程、协程生命周期、事件发布和安全回收。
+- `Fish.IsDead` 改为转发 `_fishCombat.IsDead`，避免双份状态。
+
+### 状态
+- 已完成重构，职责边界清晰。
+
+---
+
+## 13. `ScoreManager` 遗留抖动逻辑与相机耦合
+
+### 问题
+- `ScoreManager` 中残留了相机抖动和相机引用，UI 管理脚本跨层做了相机控制。
+
+### 根因
+- 表现层职责混杂，缺少相机能力归口。
+
+### 解决
+- 将抖动能力迁移到 `TopDownCameraController.PlayShake()`。
+- `ScoreManager` 仅触发效果，不再持有旧的抖动协程实现。
+
+### 状态
+- 已完成清理。
+
+---
+
+## 14. 目录分层与命名不统一
+
+### 问题
+- `Core/Gameplay/Presentation/Infrastructure` 混杂，路径层级和命名风格不一致，后续维护成本高。
+
+### 根因
+- 迭代中逐步扩展，缺少统一分层约束。
+
+### 解决
+- 统一迁移到 `Assets/Scripts/Runtime` 分层：
+  - `Runtime/Gameplay`
+  - `Runtime/Presentation`
+  - `Runtime/Infrastructure`
+  - `Runtime/Shared`
+- 迁移时同步移动 `.meta`，保证 GUID 稳定，避免场景/Prefab 引用断裂。
+
+### 状态
+- 已完成脚本与 `.meta` 迁移。
+
+---
+
+## 15. 切换鱼群模式后无鱼生成
+
+### 问题
+- 切到鱼群模式后没有任何鱼群出现。
+
+### 根因
+- 场景中 `FishGroupManager.groupConfigs` 为空（`groupConfigs: []`）。
+- 项目中未创建/未绑定 `FishGroupConfig` 资源。
+- `FishSpawnModeController` 未挂载到场景时，模式切换不生效。
+
+### 解决
+- 新增 `FishSpawnModeController` 与 `FishSpawnMode`，统一控制单鱼/鱼群二选一启停。
+- 在 `FishGroupConfig` 增加鱼群配置字段和 `spawnWaveCount`。
+- 在 `FishGroupManager` 增加固定波次生成计划（`remainWaves`）。
+
+### 状态
+- 代码链路已完成，需在场景中正确挂载并绑定配置资产。
+
+---
+
+## 16. 鱼群阵型方向错误（直线/V 字反向）
+
+### 问题
+- 直线阵列与 V 字阵列朝向与移动方向不一致，出现“阵型反了”。
+
+### 根因
+- 阵型局部坐标定义与“前进轴”约定不统一。
+- V 字形展开轴与头部朝向关系错误。
+
+### 解决
+- 统一约定：`local +Z` 为前进方向。
+- 线阵改为按前进轴定义，再通过组旋转映射到世界方向。
+- V 字改为“鱼头在原点、两翼向 `local -Z`（后方）展开”。
+
+### 状态
+- 已修复，阵型朝向与移动方向一致。
+
+---
+
+## 17. 鱼群移动出现卡顿/闪烁
+
+### 问题
+- 鱼群轨迹视觉不平滑，出现抖动和闪烁感。
+
+### 根因
+- `FishManager` 采用隔帧更新（每帧只更新一半鱼，`deltaTime * 2` 补偿），造成可见抖动。
+
+### 解决
+- 改为每帧更新所有活鱼：`fish.ManualUpdate(Time.deltaTime)`。
+
+### 状态
+- 已修复，轨迹平滑度提升。
+
+---
+
+## 18. 鱼群“整群同时消失”观感异常
+
+### 问题
+- 看起来像鱼头出屏后整群同时消失，缺少前后排错峰离场。
+
+### 根因
+- 虽然是逐条回收，但所有鱼共享同节奏路径（同帧起跑、近似同路径长度、同速），导致回收时刻几乎一致。
+
+### 解决
+- 为 `FishMovement.SetPath` 增加 `startDelay`。
+- `FishGroup` 根据槽位后向深度分配延迟（后排延迟更大）。
+- `FishGroupConfig` 增加：
+  - `baseStartDelay`
+  - `startDelayPerMeter`
+  - `maxStartDelay`
+
+### 状态
+- 已完成，鱼群具备错峰起跑与错峰离场效果。
+
+---
+
+## 当前架构补充（鱼群系统）
+
+- 刷怪模式统一入口：
+  - `SingleFish`：`FishSpawner`
+  - `FishGroup`：`FishGroupManager`
+- 鱼群数量由配置驱动：
+  - `groupCount`：单群鱼数
+  - `spawnWaveCount`：群波次数
+- 鱼群内部时序：
+  - 槽位偏移决定空间阵型
+  - 起跑延迟决定时间阵型
+

@@ -14,7 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
   m_GroupName: Default Local Group
   m_GUID: ab1812ab7d9b38e409df9434d5bda96d
-  m_SerializeEntries: []
+  m_SerializeEntries:
+  - m_GUID: e73e7774452a86444927ef0b8ff09e07
+    m_Address: Assets/Config/Fish/FishDatabase.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 4ec6864a9f9953545960e6a7237e7086, type: 2}
   m_SchemaSet:

@@ -27,7 +27,7 @@ public class Fish : MonoBehaviour, IPoolable
 
     #region 初始化
 
-    public void Init(FishConfig config, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3)
+    public void Init(FishConfig config, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float startDelay = 0f)
     {
         this.config = config;
 
@@ -36,7 +36,7 @@ public class Fish : MonoBehaviour, IPoolable
             return;
         }
 
-        _fishMovement.SetPath(p0, p1, p2, p3, config.speed);
+        _fishMovement.SetPath(p0, p1, p2, p3, config.speed, startDelay);
         _fishCombat.Init(config);
         _fishVisual.Init();
         _fishVisual.Reset();

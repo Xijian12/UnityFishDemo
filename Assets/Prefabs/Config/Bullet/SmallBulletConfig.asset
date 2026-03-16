@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BulletConfig
   bulletType: 0
   damage: 10
-  speed: 5
+  speed: 30
   maxDistance: 50
   prefab: {fileID: 18638073777656301, guid: 82447c7d861fb9d419b2e36800109a95, type: 3}

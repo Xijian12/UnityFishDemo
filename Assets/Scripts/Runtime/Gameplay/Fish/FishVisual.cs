@@ -58,6 +58,10 @@ public class FishVisual : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 播放受伤动画
+    /// </summary>
+    /// <returns></returns>
     public IEnumerator PlayDamage()
     {
         if (spriteRenderer != null)
@@ -98,6 +102,10 @@ public class FishVisual : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// 播放死亡动画
+    /// </summary>
+    /// <returns></returns>
     public IEnumerator PlayDie()
     {
         float duration = 0.3f;
@@ -107,25 +115,28 @@ public class FishVisual : MonoBehaviour
 
         if (spriteRenderer != null)
         {
-            Color startColor = spriteRenderer.color;
+            Color startColor = spriteRenderer.color; // 记录初始颜色（包含Alpha）
 
-            while (timer < duration)
+            while (timer < duration) // 循环直到时间结束
             {
+                // 安全检查,防止物体在动画过程中被销毁
                 if (this == null || !gameObject.activeInHierarchy || spriteRenderer == null)
                 {
                     yield break;
                 }
 
-                timer += Time.deltaTime;
-                float t = timer / duration;
+                timer += Time.deltaTime; // 累加时间
+                float t = timer / duration; // 计算归一化进度 (0.0 -> 1.0)
 
+                // 1. 应用缩放动画
                 transform.localScale = Vector3.Lerp(startScale, endScale, t);
 
+                // 2. 应用透明度动画
                 Color c = startColor;
-                c.a = Mathf.Lerp(1f, 0f, t);
+                c.a = Mathf.Lerp(1f, 0f, t); // Alpha 从 1 变到 0
                 spriteRenderer.color = c;
 
-                yield return null;
+                yield return null; // 等待下一帧
             }
         }
         else
@@ -138,16 +149,12 @@ public class FishVisual : MonoBehaviour
 
                 while (timer < duration)
                 {
-                    if (this == null || !gameObject.activeInHierarchy)
-                    {
-                        yield break;
-                    }
+                    // 安全检查
+                    if (this == null || !gameObject.activeInHierarchy) { yield break; }
 
+                    // 关键点,重新获取材质引用,防止材质被销毁
                     mat = GetSafeMaterial();
-                    if (mat == null)
-                    {
-                        yield break;
-                    }
+                    if (mat == null) { yield break; }
 
                     timer += Time.deltaTime;
                     float t = timer / duration;
@@ -156,22 +163,22 @@ public class FishVisual : MonoBehaviour
 
                     Color c = startColor;
                     c.a = Mathf.Lerp(1f, 0f, t);
-                    mat.color = c;
+                    mat.color = c; // 修改材质颜色
 
                     yield return null;
                 }
             }
             else
             {
+                // 如果没有材质可修改颜色，只执行缩放动画
                 while (timer < duration)
                 {
-                    if (this == null || !gameObject.activeInHierarchy)
-                    {
-                        yield break;
-                    }
+                    if (this == null || !gameObject.activeInHierarchy) { yield break; }
 
                     timer += Time.deltaTime;
                     float t = timer / duration;
+
+                    // 仅执行缩放
                     transform.localScale = Vector3.Lerp(startScale, endScale, t);
 
                     yield return null;

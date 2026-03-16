@@ -12,4 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 288b63aa7f8318c4f9c6f742606eb73d, type: 3}
   m_Name: FishDatabase
   m_EditorClassIdentifier: Assembly-CSharp::FishDatabase
-  allFishConfigEntries: []
+  allFishConfigEntries:
+  - config: {fileID: 11400000, guid: fd793443054f61c438b1b950834613e8, type: 2}
+    spawnWeight: 60
+  - config: {fileID: 11400000, guid: b975664c39a0a6f46b4d1fefce7893c1, type: 2}
+    spawnWeight: 30
+  - config: {fileID: 11400000, guid: caa602ed43a74f849a0e4f9eb820d799, type: 2}
+    spawnWeight: 10

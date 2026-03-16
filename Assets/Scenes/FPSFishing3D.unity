@@ -167,6 +167,107 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &167173677
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 167173679}
+  - component: {fileID: 167173678}
+  m_Layer: 0
+  m_Name: FishGroupManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &167173678
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 167173677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e0de3909acb15a45a08d72cdce7702e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FishGroupManager
+  groupConfigs:
+  - {fileID: 11400000, guid: cebe758cc99a53f4eb0524533d81b965, type: 2}
+  - {fileID: 11400000, guid: c7d82b4b1a5d1b642941ee6267cae542, type: 2}
+  - {fileID: 11400000, guid: 60dc3d1fda5410a40a86c9b40765448f, type: 2}
+  spawnInterval: 3
+  curveStrength: 8
+  xMin: -15
+  xMax: 15
+  zMin: 5
+  zMax: 25
+--- !u!4 &167173679
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 167173677}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0, y: -1.99999, z: 9.99999}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &487254000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 487254002}
+  - component: {fileID: 487254001}
+  m_Layer: 0
+  m_Name: FishSpawnMode
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &487254001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 487254000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d47870d41554174699d5e2bbaf4b884, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FishSpawnModeController
+  mode: 1
+  fishSpawner: {fileID: 1473620151}
+  fishGroupManager: {fileID: 167173678}
+--- !u!4 &487254002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 487254000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0, y: -1.99999, z: 9.99999}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &491369577
 GameObject:
   m_ObjectHideFlags: 0
@@ -831,13 +932,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1473620150}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 67a9a215da702cb488705d1ea3a86e5c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FishSpawner
   fishDatabaseRef:
-    m_AssetGUID: 51034a70afc606d41807486df3d140f4
+    m_AssetGUID: e73e7774452a86444927ef0b8ff09e07
     m_SubObjectName: 
     m_SubObjectType: 
     m_SubObjectGUID: 
@@ -1522,9 +1623,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93dde54caadc9cc49b3b40a2821c4532, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BulletSpawner
-  smallBulletConfig: {fileID: 11400000, guid: 239e710d7b26856489696f5d0a12d9a7, type: 2}
-  mediumBulletConfig: {fileID: 11400000, guid: 2ca469f69c1d3c442b94b2bbca9a91f8, type: 2}
-  bigBulletConfig: {fileID: 11400000, guid: 3ef24631ef67ca74b917b39e4ab8fb5e, type: 2}
+  smallBulletConfig: {fileID: 11400000, guid: c3af1b7da19d43542afebe8d703162aa, type: 2}
+  mediumBulletConfig: {fileID: 11400000, guid: f1a6399d93973f64f8f35d359378e1d1, type: 2}
+  bigBulletConfig: {fileID: 11400000, guid: efe6bff305a224c478da546c4838cb5d, type: 2}
 --- !u!4 &2044479102
 Transform:
   m_ObjectHideFlags: 0
@@ -1613,3 +1714,5 @@ SceneRoots:
   - {fileID: 2032483726}
   - {fileID: 1460966858}
   - {fileID: 2071385921}
+  - {fileID: 167173679}
+  - {fileID: 487254002}
