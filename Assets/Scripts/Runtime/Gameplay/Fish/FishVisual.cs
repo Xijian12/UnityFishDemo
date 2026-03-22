@@ -1,5 +1,5 @@
 using UnityEngine;
-using System.Collections;
+using DG.Tweening;
 
 public class FishVisual : MonoBehaviour
 {
@@ -9,11 +9,15 @@ public class FishVisual : MonoBehaviour
     private Color _defaultColor;
     private bool _hasDefaultColor;
     private Transform _cachedTransform;
+    private Vector3 _prefabLocalScale = Vector3.one;
+    private Tween _damageTween;
+    private Tween _dieTween;
 
     private void Awake()
     {
         CacheDefaultColor();
         _cachedTransform = transform;
+        _prefabLocalScale = _cachedTransform.localScale;
     }
 
     public void Init()
@@ -24,10 +28,13 @@ public class FishVisual : MonoBehaviour
             _renderer = GetComponent<Renderer>();
     }
 
-    public void Reset()
+    /// <param name="spawnScale">来自 FishConfig；为 null 时使用 Prefab 初始 localScale</param>
+    public void Reset(Vector3? spawnScale = null)
     {
-        // 不要清空默认颜色缓存；对象池复用时需要始终回到 prefab 原始色。
-        _cachedTransform.localScale = Vector3.one;
+        KillTweens();
+        Vector3 s = spawnScale ?? _prefabLocalScale;
+        if (s.sqrMagnitude < 1e-8f) s = Vector3.one;
+        _cachedTransform.localScale = s;
         RestoreVisualState();
     }
 
@@ -62,22 +69,16 @@ public class FishVisual : MonoBehaviour
     /// 播放受伤动画
     /// </summary>
     /// <returns></returns>
-    public IEnumerator PlayDamage()
+    public Tween PlayDamage()
     {
+        KillTween(ref _damageTween);
+
         if (spriteRenderer != null)
         {
             Color originalColor = spriteRenderer.color;
             spriteRenderer.color = Color.white;
-
-            yield return new WaitForSeconds(0.2f);
-
-            if (this == null || !gameObject.activeInHierarchy || spriteRenderer == null)
-            {
-                yield break;
-            }
-
-            spriteRenderer.color = originalColor;
-            yield break;
+            _damageTween = spriteRenderer.DOColor(originalColor, 0.2f).SetEase(Ease.OutQuad);
+            return _damageTween;
         }
 
         Material mat = GetSafeMaterial();
@@ -85,107 +86,44 @@ public class FishVisual : MonoBehaviour
         {
             Color originalColor = mat.color;
             mat.color = Color.white;
-
-            yield return new WaitForSeconds(0.2f);
-
-            if (this == null || !gameObject.activeInHierarchy)
-            {
-                yield break;
-            }
-
-            mat = GetSafeMaterial();
-            if (mat != null)
-            {
-                mat.color = originalColor;
-            }
+            _damageTween = mat.DOColor(originalColor, 0.2f).SetEase(Ease.OutQuad);
+            return _damageTween;
         }
 
+        return null;
     }
 
     /// <summary>
     /// 播放死亡动画
     /// </summary>
     /// <returns></returns>
-    public IEnumerator PlayDie()
+    public Tween PlayDie()
     {
+        KillTween(ref _dieTween);
+
         float duration = 0.3f;
-        float timer = 0f;
-        Vector3 startScale = transform.localScale;
+        Vector3 startScale = _cachedTransform.localScale;
         Vector3 endScale = startScale * 1.2f;
+        Sequence seq = DOTween.Sequence();
+        seq.Join(_cachedTransform.DOScale(endScale, duration).SetEase(Ease.OutQuad));
 
         if (spriteRenderer != null)
         {
-            Color startColor = spriteRenderer.color; // 记录初始颜色（包含Alpha）
-
-            while (timer < duration) // 循环直到时间结束
-            {
-                // 安全检查,防止物体在动画过程中被销毁
-                if (this == null || !gameObject.activeInHierarchy || spriteRenderer == null)
-                {
-                    yield break;
-                }
-
-                timer += Time.deltaTime; // 累加时间
-                float t = timer / duration; // 计算归一化进度 (0.0 -> 1.0)
-
-                // 1. 应用缩放动画
-                transform.localScale = Vector3.Lerp(startScale, endScale, t);
-
-                // 2. 应用透明度动画
-                Color c = startColor;
-                c.a = Mathf.Lerp(1f, 0f, t); // Alpha 从 1 变到 0
-                spriteRenderer.color = c;
-
-                yield return null; // 等待下一帧
-            }
+            seq.Join(spriteRenderer.DOColor(Color.white, duration).SetEase(Ease.OutQuad));
+            seq.Join(spriteRenderer.DOFade(0f, duration).SetEase(Ease.OutQuad));
         }
         else
         {
             Material mat = GetSafeMaterial();
-
             if (mat != null)
             {
-                Color startColor = mat.color;
-
-                while (timer < duration)
-                {
-                    // 安全检查
-                    if (this == null || !gameObject.activeInHierarchy) { yield break; }
-
-                    // 关键点,重新获取材质引用,防止材质被销毁
-                    mat = GetSafeMaterial();
-                    if (mat == null) { yield break; }
-
-                    timer += Time.deltaTime;
-                    float t = timer / duration;
-
-                    transform.localScale = Vector3.Lerp(startScale, endScale, t);
-
-                    Color c = startColor;
-                    c.a = Mathf.Lerp(1f, 0f, t);
-                    mat.color = c; // 修改材质颜色
-
-                    yield return null;
-                }
-            }
-            else
-            {
-                // 如果没有材质可修改颜色，只执行缩放动画
-                while (timer < duration)
-                {
-                    if (this == null || !gameObject.activeInHierarchy) { yield break; }
-
-                    timer += Time.deltaTime;
-                    float t = timer / duration;
-
-                    // 仅执行缩放
-                    transform.localScale = Vector3.Lerp(startScale, endScale, t);
-
-                    yield return null;
-                }
+                seq.Join(mat.DOColor(Color.white, duration).SetEase(Ease.OutQuad));
+                seq.Join(mat.DOFade(0f, duration).SetEase(Ease.OutQuad));
             }
         }
 
+        _dieTween = seq;
+        return _dieTween;
     }
 
     #region 工具方法
@@ -233,6 +171,21 @@ public class FishVisual : MonoBehaviour
             if (mat != null)
                 mat.color = c;
         }
+    }
+
+    private void KillTweens()
+    {
+        KillTween(ref _damageTween);
+        KillTween(ref _dieTween);
+    }
+
+    private static void KillTween(ref Tween tween)
+    {
+        if (tween != null && tween.IsActive())
+        {
+            tween.Kill(false);
+        }
+        tween = null;
     }
 
     #endregion

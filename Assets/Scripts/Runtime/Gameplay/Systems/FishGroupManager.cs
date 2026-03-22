@@ -8,6 +8,10 @@ using UnityEngine;
 /// </summary>
 public class FishGroupManager : MonoBehaviour
 {
+
+    [Header("基础配置")]
+    [SerializeField] private bool isLoop = true;
+
     [Header("鱼群配置")]
     [SerializeField] private List<FishGroupConfig> groupConfigs = new List<FishGroupConfig>();
     [SerializeField, Min(0.1f)] private float spawnInterval = 5f;
@@ -17,10 +21,15 @@ public class FishGroupManager : MonoBehaviour
     [SerializeField] private float xMin = -15f;
     [SerializeField] private float xMax = 15f;
     [SerializeField] private float zMin = 5f;
-    [SerializeField] private float zMax = 35f;
+    [SerializeField] private float zMax = 30f;
+    [SerializeField, Min(0f)] private float recyclePadding = 8f;
 
     private readonly List<FishGroup> activeGroups = new List<FishGroup>(8);
     private readonly HashSet<GameObject> preparedPools = new HashSet<GameObject>();
+
+    private readonly List<float> cumulativeSpawnWeights = new();        // 累加权重
+    private float totalSpawnWeight = 0f;                        // 总权重
+
     /// <summary>
     /// 生成候选鱼群配置
     /// </summary>
@@ -104,16 +113,23 @@ public class FishGroupManager : MonoBehaviour
 
         BuildGroupCurve(cfg.groupDirection, out Vector3 p0, out Vector3 p1, out Vector3 p2, out Vector3 p3);
         FishGroup group = new FishGroup(cfg, nextGroupID++);
-        if (group.Spawn(p0, p1, p2, p3))
+        if (group.Spawn(p0, p1, p2, p3, xMin, xMax, zMin, zMax, recyclePadding))
         {
             activeGroups.Add(group);
-            if (remainWaves.TryGetValue(cfg, out int remain))
+            if (isLoop)
             {
-                remain--;
-                remainWaves[cfg] = remain;
-                if (remain <= 0)
+                remainWaves[cfg] = cfg.spawnWaveCount;
+            }
+            else
+            {
+                if (remainWaves.TryGetValue(cfg, out int remain))
                 {
-                    spawnCandidates.Remove(cfg);
+                    remain--;
+                    remainWaves[cfg] = remain;
+                    if (remain <= 0)
+                    {
+                        spawnCandidates.Remove(cfg);
+                    }
                 }
             }
         }
@@ -126,8 +142,16 @@ public class FishGroupManager : MonoBehaviour
     private FishGroupConfig GetRandomGroupConfig()
     {
         if (spawnCandidates.Count == 0) return null;
-        int index = Random.Range(0, spawnCandidates.Count);
-        return spawnCandidates[index];
+        if (totalSpawnWeight <= 0f) return null;
+        float random = Random.Range(0f, totalSpawnWeight);
+        for (int i = 0; i < cumulativeSpawnWeights.Count; i++)
+        {
+            if (random <= cumulativeSpawnWeights[i])
+            {
+                return spawnCandidates[i];
+            }
+        }
+        return null;
     }
 
     /// <summary>
@@ -148,6 +172,9 @@ public class FishGroupManager : MonoBehaviour
 
             // 去重，避免同一个配置重复统计
             if (remainWaves.ContainsKey(cfg)) continue;
+
+            totalSpawnWeight += cfg.spawnWeight;
+            cumulativeSpawnWeights.Add(totalSpawnWeight);
 
             remainWaves.Add(cfg, cfg.spawnWaveCount);
             spawnCandidates.Add(cfg);

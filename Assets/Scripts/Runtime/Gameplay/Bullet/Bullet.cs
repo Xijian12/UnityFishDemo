@@ -47,9 +47,12 @@ public class Bullet : MonoBehaviour, IPoolable
         CheckHit();
     }
 
-    private const float HitRadius = 0.8f;
+    private const float HitRadius = 1.5f;
     private const float HitRadiusSq = HitRadius * HitRadius;
 
+    /// <summary>
+    /// 检查碰撞
+    /// </summary>
     void CheckHit()
     {
         var activeFish = FishManager.Instance?.ActiveFish;

@@ -1,4 +1,5 @@
 using UnityEngine;
+using DG.Tweening;
 
 /// <summary>
 /// 金币飞行特效
@@ -14,9 +15,8 @@ public class CoinUIFx : MonoBehaviour, IPoolable
     private Vector2 _startAnchoredPos;              // 起始位置
     private Vector2 _targetAnchoredPos;             // 目标位置
     private float _moveDuration;                    // 移动总时长
-    private float _timer;                          // 当前动画进度计时器
     private int _score;                            // 分数值
-    private bool _isPlaying;                       // 动画是否正在播放
+    private Tween _moveTween;
 
     private void Awake()
     {
@@ -43,7 +43,6 @@ public class CoinUIFx : MonoBehaviour, IPoolable
         _targetAnchoredPos = targetAnchoredPos;
         _score = score;
         _moveDuration = Mathf.Max(0.01f, moveDuration);
-        _timer = 0f;
 
         if (_rectTransform == null)
             _rectTransform = GetComponent<RectTransform>();
@@ -55,45 +54,37 @@ public class CoinUIFx : MonoBehaviour, IPoolable
     /// </summary>
     public void Launch()
     {
-        _isPlaying = true;
-    }
-
-    private void Update()
-    {
-        if (!_isPlaying) return;  // 如果动画未启动，直接返回
-
-        _timer += Time.deltaTime;  // 累积时间
-        float t = Mathf.Clamp01(_timer / _moveDuration);  // 归一化进度 [0,1]
-
-        // SmoothStep 缓动函数
-        float smoothT = t * t * (3f - 2f * t);
-
-        // 线性插值更新位置
-        _rectTransform.anchoredPosition = Vector2.LerpUnclamped(_startAnchoredPos, _targetAnchoredPos, smoothT);
-
-        if (t >= 1f)  // 动画完成
+        KillMoveTween();
+        _moveTween = _rectTransform
+            .DOAnchorPos(_targetAnchoredPos, _moveDuration)
+            .SetEase(Ease.InOutSine)
+            .OnComplete(() =>
         {
-            _isPlaying = false;  // 停止动画
-
-            // 发布事件（通知计分系统加分）
             EventBusClass.Instance.Publish(new CoinArrivedEvent()
             {
                 Score = _score,
                 Position = _targetAnchoredPos
             });
 
-            // 回收到对象池
             if (PoolManager.Instance != null && _poolPrefabKey != null)
             {
                 PoolManager.Instance.Release(this, _poolPrefabKey);
             }
+        });
+    }
+
+    private void KillMoveTween()
+    {
+        if (_moveTween != null && _moveTween.IsActive())
+        {
+            _moveTween.Kill(false);
         }
+        _moveTween = null;
     }
 
     public void OnSpawn()
     {
-        _isPlaying = false;
-        _timer = 0f;
+        KillMoveTween();
         if (_rectTransform == null)
             _rectTransform = GetComponent<RectTransform>();
         if (_rectTransform != null)
@@ -102,8 +93,7 @@ public class CoinUIFx : MonoBehaviour, IPoolable
 
     public void OnRecycle()
     {
-        _isPlaying = false;
-        _timer = 0f;
+        KillMoveTween();
         _score = 0;
         _poolPrefabKey = null;
     }

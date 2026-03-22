@@ -1,4 +1,5 @@
 using UnityEngine;
+using DG.Tweening;
 
 /// <summary>
 /// 固定俯视摄像机。
@@ -35,10 +36,9 @@ public sealed class TopDownCameraController : MonoBehaviour
 
     private float _currentYaw;
     private bool _positionApplied;
-    private float _shakeTimer;
-    private float _shakeDuration;
     private float _shakeMagnitude;
     private Vector3 _shakeOffset;
+    private Tween _shakeTween;
 
     private void Awake()
     {
@@ -59,9 +59,6 @@ public sealed class TopDownCameraController : MonoBehaviour
         {
             HandleYawInput();
         }
-
-        // 震动相机
-        UpdateShake();
 
         // 应用位置和旋转
         ApplyPositionOnly();
@@ -107,27 +104,6 @@ public sealed class TopDownCameraController : MonoBehaviour
         transform.rotation = Quaternion.Euler(fixedPitch, _currentYaw, 0f);
     }
 
-    private void UpdateShake()
-    {
-        if (_shakeTimer <= 0f)
-        {
-            _shakeOffset = Vector3.zero;
-            return;
-        }
-
-        float dt = useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
-        _shakeTimer -= dt;
-
-        float attenuate = _shakeDuration > 0.0001f ? Mathf.Clamp01(_shakeTimer / _shakeDuration) : 0f;
-        float currentMagnitude = _shakeMagnitude * attenuate;
-
-        _shakeOffset = new Vector3(
-            Random.Range(-1f, 1f) * currentMagnitude,
-            Random.Range(-1f, 1f) * currentMagnitude,
-            0f
-        );
-    }
-
     #region 公共 API
 
     /// <summary>
@@ -159,10 +135,38 @@ public sealed class TopDownCameraController : MonoBehaviour
     /// </summary>
     public void PlayShake(float duration = -1f, float magnitude = -1f)
     {
-        _shakeDuration = duration > 0f ? duration : defaultShakeDuration;
+        float shakeDuration = duration > 0f ? duration : defaultShakeDuration;
         _shakeMagnitude = magnitude > 0f ? magnitude : defaultShakeMagnitude;
-        _shakeTimer = _shakeDuration;
+
+        if (_shakeTween != null && _shakeTween.IsActive())
+        {
+            _shakeTween.Kill(false);
+        }
+
+        float attenuation = 1f;
+        _shakeTween = DOTween
+            .To(() => attenuation, x => attenuation = x, 0f, shakeDuration)
+            .SetEase(Ease.OutQuad)
+            .SetUpdate(useUnscaledTime)
+            .OnUpdate(() =>
+            {
+                float currentMagnitude = _shakeMagnitude * attenuation;
+                _shakeOffset = new Vector3(
+                    Random.Range(-1f, 1f) * currentMagnitude,
+                    Random.Range(-1f, 1f) * currentMagnitude,
+                    0f
+                );
+            })
+            .OnComplete(() => _shakeOffset = Vector3.zero);
     }
 
     #endregion
+
+    private void OnDestroy()
+    {
+        if (_shakeTween != null && _shakeTween.IsActive())
+        {
+            _shakeTween.Kill(false);
+        }
+    }
 }

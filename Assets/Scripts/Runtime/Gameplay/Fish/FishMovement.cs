@@ -34,10 +34,6 @@ public class FishMovement : MonoBehaviour
     /// </summary>
     private float _elapsedTime;
     /// <summary>
-    /// 起跑延迟剩余时间
-    /// </summary>
-    private float _startDelayRemaining;
-    /// <summary>
     /// 移动速度
     /// </summary>
     private float _speed;
@@ -48,7 +44,7 @@ public class FishMovement : MonoBehaviour
     /// <summary>
     /// 移动是否已完成，可用于触发回收。
     /// </summary>
-    public bool IsComplete => _isActive && _startDelayRemaining <= 0f && _elapsedTime >= _duration;
+    public bool IsComplete => _isActive && _elapsedTime >= _duration;
 
     /// <summary>
     /// 当前是否正在移动。
@@ -58,8 +54,8 @@ public class FishMovement : MonoBehaviour
     private void Awake()
     {
         _baseY = 0f;
-        _floatAmplitude = 0.15f;   // 上下动作幅度
-        _floatFrequency = 2.0f;    // 上下动作速度
+        _floatAmplitude = 0.1f;   // 上下动作幅度
+        _floatFrequency = 1.5f;    // 上下动作速度
         _floatPhase = Random.Range(0f, Mathf.PI * 2f); // 随机相位，避免所有鱼同步上下动作
         _cachedTransform = transform;
     }
@@ -73,14 +69,13 @@ public class FishMovement : MonoBehaviour
     /// <param name="p2">控制点 2</param>
     /// <param name="p3">终点</param>
     /// <param name="speed">沿曲线移动的速度（单位/秒）</param>
-    public void SetPath(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float speed, float startDelay = 0f)
+    public void SetPath(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float speed)
     {
         _p0 = ForceXZ(p0);
         _p1 = ForceXZ(p1);
         _p2 = ForceXZ(p2);
         _p3 = ForceXZ(p3);
         _speed = Mathf.Max(0.001f, speed);
-        _startDelayRemaining = Mathf.Max(0f, startDelay);
         _elapsedTime = 0f;
         _isActive = true;
 
@@ -100,19 +95,6 @@ public class FishMovement : MonoBehaviour
     {
         if (!_isActive) return false;
         if (deltaTime <= 0f) return true;
-
-        if (_startDelayRemaining > 0f)
-        {
-            _startDelayRemaining -= deltaTime;
-            if (_startDelayRemaining > 0f)
-            {
-                return true;
-            }
-
-            // 本帧剩余时间用于推动曲线，避免延迟结束帧出现停顿。
-            deltaTime = -_startDelayRemaining;
-            _startDelayRemaining = 0f;
-        }
 
         _elapsedTime += deltaTime;
         float t = Mathf.Clamp01(_elapsedTime / _duration);
@@ -140,7 +122,6 @@ public class FishMovement : MonoBehaviour
     public void Reset()
     {
         _isActive = false;
-        _startDelayRemaining = 0f;
         _elapsedTime = 0f;
     }
 

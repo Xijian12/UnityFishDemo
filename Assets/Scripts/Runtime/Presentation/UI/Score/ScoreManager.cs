@@ -1,6 +1,7 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using DG.Tweening;
 
 public class ScoreManager : MonoBehaviour
 {
@@ -11,7 +12,8 @@ public class ScoreManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI niceText;
     [SerializeField] private TopDownCameraController topDownCamera;
 
-    private Coroutine comboRoutine;
+    private Tween comboTween;
+    private Tween niceTween;
     private int totalScore = 0;
     private int comboCount = 0;
     private float lastKillTime = 0f;
@@ -73,11 +75,12 @@ public class ScoreManager : MonoBehaviour
         {
             comboText.gameObject.SetActive(true);
             comboText.text = comboCount + " COMBO!";
-
-            if (comboRoutine != null)
-                StopCoroutine(comboRoutine);
-
-            comboRoutine = StartCoroutine(FadeOutCombo());
+            if (comboTween != null && comboTween.IsActive()) comboTween.Kill(false);
+            comboText.alpha = 1f;
+            comboTween = comboText
+                .DOFade(0f, 0.8f)
+                .SetEase(Ease.OutQuad)
+                .OnComplete(() => comboText.gameObject.SetActive(false));
         }
 
         if (comboCount >= 3)
@@ -87,64 +90,16 @@ public class ScoreManager : MonoBehaviour
                 topDownCamera.PlayShake();
 
             if (niceText != null)
-                StartCoroutine(ShowNice());
+            {
+                if (niceTween != null && niceTween.IsActive()) niceTween.Kill(false);
+                niceText.gameObject.SetActive(true);
+                niceText.alpha = 1f;
+                niceTween = niceText
+                    .DOFade(0f, 0.8f)
+                    .SetEase(Ease.OutQuad)
+                    .OnComplete(() => niceText.gameObject.SetActive(false));
+            }
         }
-    }
-
-    /// <summary>
-    /// 淡出combo
-    /// </summary>
-    /// <returns></returns>
-    private IEnumerator FadeOutCombo()
-    {
-        float duration = 0.8f;
-        float timer = 0f;
-
-        Color startColor = comboText.color;
-        startColor.a = 1f;
-        comboText.color = startColor;
-
-        while (timer < duration)
-        {
-            timer += Time.deltaTime;
-            float t = timer / duration;
-
-            Color c = comboText.color;
-            c.a = Mathf.Lerp(1f, 0f, t);
-            comboText.color = c;
-
-            yield return null;
-        }
-
-        comboText.gameObject.SetActive(false);
-    }
-
-    private IEnumerator ShowNice()
-    {
-        if (niceText == null) yield break;
-
-        niceText.gameObject.SetActive(true);
-
-        float duration = 0.8f;
-        float timer = 0f;
-
-        Color startColor = niceText.color;
-        startColor.a = 1f;
-        niceText.color = startColor;
-
-        while (timer < duration)
-        {
-            timer += Time.deltaTime;
-            float t = timer / duration;
-
-            Color c = niceText.color;
-            c.a = Mathf.Lerp(1f, 0f, t);
-            niceText.color = c;
-
-            yield return null;
-        }
-
-        niceText.gameObject.SetActive(false);
     }
 
     public void ResetScore()
@@ -159,5 +114,11 @@ public class ScoreManager : MonoBehaviour
         {
             scoreText.SetText($"{score}");
         }
+    }
+
+    private void OnDestroy()
+    {
+        if (comboTween != null && comboTween.IsActive()) comboTween.Kill(false);
+        if (niceTween != null && niceTween.IsActive()) niceTween.Kill(false);
     }
 }

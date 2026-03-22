@@ -15,10 +15,11 @@ MonoBehaviour:
   fishConfig: {fileID: 11400000, guid: fd793443054f61c438b1b950834613e8, type: 2}
   formationType: 0
   groupDirection: 0
-  groupCount: 10
+  groupCount: 5
   groupDistance: 3
   groupAngle: 30
   groupSpeed: 4
   spawnWaveCount: 5
+  spawnWeight: 10
   initialPoolSize: 30
   maxPoolSize: 100

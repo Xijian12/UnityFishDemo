@@ -117,6 +117,10 @@ public class FishSpawner : MonoBehaviour
     [Tooltip("贝塞尔控制点偏离幅度，越大曲线越弯")]
     [SerializeField] private float curveStrength = 20f;
 
+    /// <summary>
+    /// 生成鱼
+    /// </summary>
+    /// <param name="config"></param>
     void SpawnFish(FishConfig config)
     {
         Fish fish = PoolManager.Instance.Get<Fish>(config.prefab);

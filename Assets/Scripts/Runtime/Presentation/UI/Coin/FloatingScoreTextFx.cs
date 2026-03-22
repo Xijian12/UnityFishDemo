@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using DG.Tweening;
 
 /// <summary>
 /// 计分板旁的浮动加分文字特效（对象池友好）。
@@ -16,9 +17,8 @@ public class FloatingScoreTextFx : MonoBehaviour, IPoolable
     private GameObject _poolPrefabKey;
     private Vector2 _startAnchoredPos;
     private Vector2 _endAnchoredPos;
-    private float _timer;
-    private bool _isPlaying;
     private Color _initialColor;
+    private Sequence _sequence;
 
     private void Awake()
     {
@@ -36,7 +36,6 @@ public class FloatingScoreTextFx : MonoBehaviour, IPoolable
         _poolPrefabKey = poolPrefabKey;
         _startAnchoredPos = startAnchoredPos;
         _endAnchoredPos = _startAnchoredPos + new Vector2(0f, moveDistance);
-        _timer = 0f;
 
         if (_rectTransform == null)
             _rectTransform = GetComponent<RectTransform>();
@@ -55,46 +54,41 @@ public class FloatingScoreTextFx : MonoBehaviour, IPoolable
 
     public void Launch()
     {
-        _isPlaying = true;
-    }
-
-    private void Update()
-    {
-        if (!_isPlaying) return;
-
-        _timer += Time.deltaTime;
-        float t = Mathf.Clamp01(_timer / Mathf.Max(0.01f, duration));
-
-        // 上浮与透明度变化都采用无分配计算。
-        _rectTransform.anchoredPosition = Vector2.LerpUnclamped(_startAnchoredPos, _endAnchoredPos, t);
-
+        KillSequence();
+        float safeDuration = Mathf.Max(0.01f, duration);
+        _sequence = DOTween.Sequence();
+        _sequence.Join(_rectTransform.DOAnchorPos(_endAnchoredPos, safeDuration).SetEase(Ease.OutQuad));
         if (_text != null)
         {
-            Color c = _text.color;
-            c.a = 1f - t;
-            _text.color = c;
+            _sequence.Join(_text.DOFade(0f, safeDuration).SetEase(Ease.OutQuad));
         }
 
-        if (t >= 1f)
+        _sequence.OnComplete(() =>
         {
-            _isPlaying = false;
             if (PoolManager.Instance != null && _poolPrefabKey != null)
             {
                 PoolManager.Instance.Release(this, _poolPrefabKey);
             }
+        });
+    }
+
+    private void KillSequence()
+    {
+        if (_sequence != null && _sequence.IsActive())
+        {
+            _sequence.Kill(false);
         }
+        _sequence = null;
     }
 
     public void OnSpawn()
     {
-        _isPlaying = false;
-        _timer = 0f;
+        KillSequence();
     }
 
     public void OnRecycle()
     {
-        _isPlaying = false;
-        _timer = 0f;
+        KillSequence();
         _poolPrefabKey = null;
     }
 }
