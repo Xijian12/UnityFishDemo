@@ -15,6 +15,13 @@ public class FishSpawner : MonoBehaviour
 
     private float timer;
     private bool isInitialized = false;
+    [SerializeField, Tooltip("关闭后仅响应关卡/脚本显式调用生成，不自动定时刷鱼")]
+    private bool autoSpawnEnabled = true;
+
+    /// <summary>数据库与对象池是否已就绪（关卡系统可等待此条件再刷怪）</summary>
+    public bool IsReady => isInitialized;
+
+    public void SetAutoSpawnEnabled(bool enabled) => autoSpawnEnabled = enabled;
 
     void Start()
     {
@@ -79,7 +86,7 @@ public class FishSpawner : MonoBehaviour
     // 定时生成一条鱼
     void Update()
     {
-        if (!isInitialized) return;
+        if (!isInitialized || !autoSpawnEnabled) return;
 
         timer += Time.deltaTime;
 
@@ -118,10 +125,9 @@ public class FishSpawner : MonoBehaviour
     [SerializeField] private float curveStrength = 20f;
 
     /// <summary>
-    /// 生成鱼
+    /// 关卡或外部调用：生成一条指定配置的鱼（须已在 FishDatabase 中并建池）。
     /// </summary>
-    /// <param name="config"></param>
-    void SpawnFish(FishConfig config)
+    public void SpawnFish(FishConfig config)
     {
         Fish fish = PoolManager.Instance.Get<Fish>(config.prefab);
         if (fish == null) return;
@@ -139,6 +145,21 @@ public class FishSpawner : MonoBehaviour
 
         GetCubicBezierControlPoints(p0, p3, leftToRight, out Vector3 p1, out Vector3 p2);
         fish.Init(config, p0, p1, p2, p3);
+    }
+
+    /// <summary>
+    /// 鱼群专用：按给定路径生成单条鱼（池化 + Init），不经随机路径。返回实例供鱼群登记。
+    /// </summary>
+    public Fish SpawnFishOnPath(FishConfig config, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float speedOverride)
+    {
+        if (config == null || config.prefab == null || PoolManager.Instance == null) return null;
+
+        Fish fish = PoolManager.Instance.Get<Fish>(config.prefab);
+        if (fish == null) return null;
+
+        fish.SetExternalMovementControl(true);
+        fish.Init(config, p0, p1, p2, p3, speedOverride);
+        return fish;
     }
 
     /// <summary>

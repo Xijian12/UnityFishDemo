@@ -1,7 +1,9 @@
 using UnityEngine;
 
 /// <summary>
-/// 统一控制刷怪模式，避免 FishSpawner 与 FishGroupManager 同时生效。
+/// 统一控制刷怪模式：仅用 autoSpawn 开关区分单鱼/鱼群定时刷怪。
+/// 禁止禁用 FishSpawner / FishGroupManager 组件本身——否则 Start 不执行，
+/// FishSpawner 无法加载 FishDatabase（IsReady 永远 false），关卡会一直卡在等待。
 /// </summary>
 public class FishSpawnModeController : MonoBehaviour
 {
@@ -37,35 +39,20 @@ public class FishSpawnModeController : MonoBehaviour
     }
 
     /// <summary>
-    /// 自动绑定组件
+    /// 非关卡场景：当前模式一侧允许自动刷怪，另一侧关闭。
+    /// 关卡场景：LevelManager 应在 SetMode 之后再次关闭两侧自动刷怪。
     /// </summary>
-    private void AutoBindIfNeeded()
-    {
-        if (fishSpawner == null)
-        {
-            fishSpawner = FindObjectOfType<FishSpawner>();
-        }
-
-        if (fishGroupManager == null)
-        {
-            fishGroupManager = FindObjectOfType<FishGroupManager>();
-        }
-    }
-
-    /// <summary>
-    /// 应用模式
-    /// </summary>
-    /// <param name="mode"></param>
     private void ApplyMode()
     {
         if (fishSpawner != null)
-        {
-            fishSpawner.enabled = (mode == FishSpawnMode.SingleFish);
-        }
+            fishSpawner.SetAutoSpawnEnabled(mode == FishSpawnMode.SingleFish);
 
         if (fishGroupManager != null)
-        {
-            fishGroupManager.enabled = (mode == FishSpawnMode.FishGroup);
-        }
+            fishGroupManager.SetAutoSpawnEnabled(mode == FishSpawnMode.FishGroup);
+    }
+
+    private void AutoBindIfNeeded()
+    {
+        // 不在运行时用 Find：请在 Inspector 绑定 FishSpawner / FishGroupManager。
     }
 }

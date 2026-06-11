@@ -40,6 +40,8 @@ public class FishMovement : MonoBehaviour
     private bool _isActive;
 
     private Transform _cachedTransform;
+    /// <summary>预制体上的本地旋转偏移（含模型俯仰/侧倾等），Awake 时捕获一次。</summary>
+    private Quaternion _prefabLocalRotation;
 
     /// <summary>
     /// 移动是否已完成，可用于触发回收。
@@ -58,6 +60,7 @@ public class FishMovement : MonoBehaviour
         _floatFrequency = 1.5f;    // 上下动作速度
         _floatPhase = Random.Range(0f, Mathf.PI * 2f); // 随机相位，避免所有鱼同步上下动作
         _cachedTransform = transform;
+        _prefabLocalRotation = _cachedTransform.localRotation;
     }
 
     /// <summary>
@@ -131,14 +134,21 @@ public class FishMovement : MonoBehaviour
         return v;
     }
 
+    /// <summary>
+    /// 按世界空间前进方向设置朝向，保留预制体 localRotation 偏移。供鱼群脱离直线游动等外部驱动调用。
+    /// </summary>
+    public void ApplyFacingDirection(Vector3 direction)
+    {
+        direction.y = 0f;
+        if (direction.sqrMagnitude <= 0.0001f) return;
+
+        Quaternion moveRotation = Quaternion.LookRotation(direction.normalized, Vector3.up);
+        _cachedTransform.localRotation = moveRotation * _prefabLocalRotation;
+    }
+
     private void ApplyFacing(float t)
     {
         Vector3 tangent = BezierUtility.GetTangent(t, _p0, _p1, _p2, _p3);
-        tangent.y = 0f;
-
-        if (tangent.sqrMagnitude > 0.0001f)
-        {
-            _cachedTransform.forward = tangent.normalized;
-        }
+        ApplyFacingDirection(tangent);
     }
 }

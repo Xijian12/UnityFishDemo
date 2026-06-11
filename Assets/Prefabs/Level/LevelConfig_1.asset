@@ -1,0 +1,290 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2459e1a85bca01f47bbefc4210cebfbf, type: 3}
+  m_Name: LevelConfig_1
+  m_EditorClassIdentifier: Assembly-CSharp::LevelConfig
+  levelType: 0
+  levelIndex: 1
+  levelTargetScore: 300
+  levelTime: 120
+  levelSpawnMode: 1
+  initialCanonType: 0
+  initialBulletType: 0
+  waveConfigs:
+  - startTime: 0
+    fishGroups:
+    - {fileID: 11400000, guid: cebe758cc99a53f4eb0524533d81b965, type: 2}
+    - {fileID: 11400000, guid: c7d82b4b1a5d1b642941ee6267cae542, type: 2}
+    - {fileID: 11400000, guid: cebe758cc99a53f4eb0524533d81b965, type: 2}
+    - {fileID: 11400000, guid: c7d82b4b1a5d1b642941ee6267cae542, type: 2}
+    singleFishEntries:
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+  - startTime: 30
+    fishGroups:
+    - {fileID: 11400000, guid: c7d82b4b1a5d1b642941ee6267cae542, type: 2}
+    - {fileID: 11400000, guid: c7d82b4b1a5d1b642941ee6267cae542, type: 2}
+    - {fileID: 11400000, guid: cebe758cc99a53f4eb0524533d81b965, type: 2}
+    - {fileID: 11400000, guid: 60dc3d1fda5410a40a86c9b40765448f, type: 2}
+    singleFishEntries:
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+  - startTime: 60
+    fishGroups:
+    - {fileID: 11400000, guid: c7d82b4b1a5d1b642941ee6267cae542, type: 2}
+    - {fileID: 11400000, guid: c7d82b4b1a5d1b642941ee6267cae542, type: 2}
+    - {fileID: 11400000, guid: 60dc3d1fda5410a40a86c9b40765448f, type: 2}
+    - {fileID: 11400000, guid: 60dc3d1fda5410a40a86c9b40765448f, type: 2}
+    singleFishEntries:
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+  - startTime: 90
+    fishGroups:
+    - {fileID: 11400000, guid: c7d82b4b1a5d1b642941ee6267cae542, type: 2}
+    - {fileID: 11400000, guid: 60dc3d1fda5410a40a86c9b40765448f, type: 2}
+    - {fileID: 11400000, guid: 60dc3d1fda5410a40a86c9b40765448f, type: 2}
+    - {fileID: 11400000, guid: 60dc3d1fda5410a40a86c9b40765448f, type: 2}
+    singleFishEntries:
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0
+    - fishConfig: {fileID: 0}
+      count: 0

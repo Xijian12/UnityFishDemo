@@ -108,6 +108,9 @@ public class ScoreManager : MonoBehaviour
         UpdateScoreDisplay(totalScore);
     }
 
+    /// <summary>当前总分（关卡胜负与 HUD 同步用）</summary>
+    public int GetTotalScore() => totalScore;
+
     private void UpdateScoreDisplay(int score)
     {
         if (scoreText != null)

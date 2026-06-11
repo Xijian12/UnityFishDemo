@@ -18,7 +18,7 @@ MonoBehaviour:
   groupCount: 5
   groupDistance: 3
   groupAngle: 30
-  groupSpeed: 4
+  groupSpeed: 2
   spawnWaveCount: 5
   spawnWeight: 10
   initialPoolSize: 30

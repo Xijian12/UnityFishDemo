@@ -23,15 +23,11 @@ public class Fish : MonoBehaviour, IPoolable
     public FishMovement Movement => _fishMovement;
     public Transform CachedTransform => transform;
 
-    private void Awake()
-    {
-        CacheComponents();
-    }
-
     #region 初始化
 
     public void Init(FishConfig config, Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float speedOverride = -1f)
     {
+        CacheComponents();
         this.config = config;
 
         if (!EnsureDependencies())

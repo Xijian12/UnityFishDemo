@@ -16,4 +16,5 @@ MonoBehaviour:
   hp: 50
   speed: 6
   score: 20
+  spawnScale: {x: 1.5, y: 1.5, z: 1.5}
   prefab: {fileID: 5400549897852037545, guid: c213b47d4ac406c4dbb3ecc487227381, type: 3}

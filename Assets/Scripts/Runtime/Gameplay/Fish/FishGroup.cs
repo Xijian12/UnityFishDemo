@@ -7,10 +7,10 @@ public class FishGroup{
     private readonly List<FishGroupMember> _members = new List<FishGroupMember>(16);
     private readonly List<Vector3> _slotOffsets = new List<Vector3>(16);
 
-    private Vector3 _groupP0;
-    private Vector3 _groupP1;
-    private Vector3 _groupP2;
-    private Vector3 _groupP3;
+    private Vector3 _groupP0;   // 组路径起点
+    private Vector3 _groupP1;   // 组路径控制点1
+    private Vector3 _groupP2;   // 组路径控制点2
+    private Vector3 _groupP3;   // 组路径终点
     private Vector3 _exitDirection;
 
     private float _recycleMinX;
@@ -44,7 +44,8 @@ public class FishGroup{
         float battleMaxX,
         float battleMinZ,
         float battleMaxZ,
-        float recyclePadding)
+        float recyclePadding,
+        FishSpawner fishSpawner)
     {
         if (_config == null || _config.fishConfig == null || _config.fishConfig.prefab == null)
         {
@@ -57,6 +58,11 @@ public class FishGroup{
             FormationCalculator.CalculateFormationPosition(_config.formationType, _config, _slotOffsets);
         }
         if (_slotOffsets.Count == 0) return false;
+        if (fishSpawner == null)
+        {
+            Debug.LogWarning("FishGroup Spawn failed: FishSpawner is null.");
+            return false;
+        }
 
         _members.Clear();
         CacheGroupPath(groupP0, groupP1, groupP2, groupP3);
@@ -81,10 +87,6 @@ public class FishGroup{
         // 6. 循环生成每条鱼
         for (int i = 0; i < _slotOffsets.Count; i++)
         {
-            // a. 从对象池获取鱼
-            Fish fish = PoolManager.Instance.Get<Fish>(_config.fishConfig.prefab);
-            if (fish == null) continue; // 如果对象池耗尽或出错，跳过这条鱼
-
             Vector3 localOffset = _slotOffsets[i];
             Vector3 offset = rot * localOffset;
             Vector3 p0 = ForceXZ(_groupP0 + offset);
@@ -92,8 +94,8 @@ public class FishGroup{
             Vector3 p2 = ForceXZ(_groupP2 + offset);
             Vector3 p3 = ForceXZ(_groupP3 + offset);
 
-            fish.SetExternalMovementControl(true);
-            fish.Init(_config.fishConfig, p0, p1, p2, p3, _config.groupSpeed);
+            Fish fish = fishSpawner.SpawnFishOnPath(_config.fishConfig, p0, p1, p2, p3, _config.groupSpeed);
+            if (fish == null) continue;
 
             _members.Add(new FishGroupMember
             {
@@ -143,10 +145,7 @@ public class FishGroup{
             {
                 // 移动鱼
                 member.CachedTransform.position += _exitDirection * (_config.groupSpeed * deltaTime);
-                if (_exitDirection.sqrMagnitude > 0.0001f)
-                {
-                    member.CachedTransform.forward = _exitDirection;
-                }
+                member.Movement?.ApplyFacingDirection(_exitDirection);
             }
 
             if (IsOutOfRecycleBounds(member.CachedTransform.position))
