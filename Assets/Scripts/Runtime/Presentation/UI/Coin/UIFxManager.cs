@@ -2,6 +2,7 @@ using UnityEngine;
 
 /// <summary>
 /// UI 特效管理器（金币 + 浮动加分文字）。
+/// 所有坐标统一换算到 Root Canvas 的局部空间。
 /// </summary>
 public class UIFxManager : MonoBehaviour
 {
@@ -32,18 +33,19 @@ public class UIFxManager : MonoBehaviour
     private Camera _uiEventCamera;
     private ScorePanelView _boundScorePanel;
     private bool _poolsCreated;
+    private Transform _poolParent;
 
     private void Awake()
     {
         Instance = this;
         ResolveCamera();
         RefreshCanvasState();
-        ValidateBindings();
     }
 
     private void Start()
     {
         EnsurePools();
+        ValidateBindings();
     }
 
     private void OnEnable()
@@ -66,8 +68,8 @@ public class UIFxManager : MonoBehaviour
         uiCanvas = view.PanelCanvas;
         scoreBoardTarget = view.CoinFlyTarget;
         RefreshCanvasState();
-        ValidateBindings();
         EnsurePools();
+        ValidateBindings();
     }
 
     public void UnbindScorePanel(ScorePanelView view)
@@ -80,18 +82,18 @@ public class UIFxManager : MonoBehaviour
     {
         if (!IsReadyForCoinFx()) return;
 
-        if (!TryWorldToAnchoredPosition(fishKilledEvent.Position, out Vector2 startAnchoredPos))
+        if (!TryWorldToCanvasAnchoredPosition(fishKilledEvent.Position, out Vector2 startAnchoredPos))
             return;
 
-        if (!TryRectTransformToAnchoredPosition(scoreBoardTarget, out Vector2 targetAnchoredPos))
+        if (!TryRectToCanvasAnchoredPosition(scoreBoardTarget, out Vector2 targetAnchoredPos))
             return;
 
         CoinUIFx coinFx = PoolManager.Instance.Get<CoinUIFx>(coinPrefab);
         if (coinFx == null) return;
 
-        Transform coinParent = _canvasRect;
-        coinFx.transform.SetParent(coinParent, false);
-        coinFx.transform.SetAsLastSibling();
+        RectTransform coinRect = coinFx.GetComponent<RectTransform>();
+        coinRect.SetParent(_canvasRect, false);
+        coinRect.SetAsLastSibling();
 
         coinFx.Initialize(
             poolPrefabKey: coinPrefab,
@@ -109,14 +111,15 @@ public class UIFxManager : MonoBehaviour
         if (PoolManager.Instance == null)
             return;
 
-        if (!TryRectTransformToAnchoredPosition(scoreBoardTarget, out Vector2 scoreBoardAnchoredPos))
+        if (!TryRectToCanvasAnchoredPosition(scoreBoardTarget, out Vector2 scoreBoardAnchoredPos))
             return;
 
         FloatingScoreTextFx textFx = PoolManager.Instance.Get<FloatingScoreTextFx>(floatingTextPrefab);
         if (textFx == null) return;
 
-        textFx.transform.SetParent(_canvasRect, false);
-        textFx.transform.SetAsLastSibling();
+        RectTransform textRect = textFx.GetComponent<RectTransform>();
+        textRect.SetParent(_canvasRect, false);
+        textRect.SetAsLastSibling();
 
         textFx.Initialize(
             poolPrefabKey: floatingTextPrefab,
@@ -127,9 +130,9 @@ public class UIFxManager : MonoBehaviour
 
     private bool IsReadyForCoinFx()
     {
-        return uiCanvas != null
-               && _canvasRect != null
+        return _canvasRect != null
                && scoreBoardTarget != null
+               && scoreBoardTarget.gameObject.activeInHierarchy
                && coinPrefab != null
                && worldCamera != null
                && PoolManager.Instance != null;
@@ -137,10 +140,14 @@ public class UIFxManager : MonoBehaviour
 
     private void EnsurePools()
     {
-        if (_poolsCreated || PoolManager.Instance == null) return;
-        if (uiCanvas == null || coinPrefab == null) return;
+        if (PoolManager.Instance == null || _canvasRect == null || coinPrefab == null)
+            return;
 
-        Transform poolParent = _canvasRect != null ? _canvasRect : uiCanvas.transform;
+        Transform poolParent = _canvasRect;
+        if (_poolsCreated && _poolParent == poolParent)
+            return;
+
+        _poolParent = poolParent;
 
         PoolManager.Instance.CreatePool<CoinUIFx>(
             coinPrefab,
@@ -168,19 +175,39 @@ public class UIFxManager : MonoBehaviour
 
     private void RefreshCanvasState()
     {
-        if (uiCanvas == null)
-            uiCanvas = GetComponentInParent<Canvas>();
+        Canvas root = ResolveRootCanvas(uiCanvas);
+        if (root == null && _boundScorePanel != null)
+            root = ResolveRootCanvas(_boundScorePanel.PanelCanvas);
 
-        _canvasRect = uiCanvas != null ? uiCanvas.GetComponent<RectTransform>() : null;
-        _uiEventCamera = uiCanvas != null && uiCanvas.renderMode != RenderMode.ScreenSpaceOverlay
-            ? uiCanvas.worldCamera
+        if (root != null)
+            uiCanvas = root;
+
+        _canvasRect = root != null ? root.GetComponent<RectTransform>() : null;
+        _uiEventCamera = root != null && root.renderMode != RenderMode.ScreenSpaceOverlay
+            ? root.worldCamera
             : null;
+
+        EnsureCanvasTransformValid(_canvasRect);
+    }
+
+    private static Canvas ResolveRootCanvas(Canvas canvas)
+    {
+        if (canvas == null) return null;
+        return canvas.rootCanvas != null ? canvas.rootCanvas : canvas;
+    }
+
+    private static void EnsureCanvasTransformValid(RectTransform canvasRect)
+    {
+        if (canvasRect == null) return;
+
+        if (canvasRect.localScale.sqrMagnitude < 0.0001f)
+            canvasRect.localScale = Vector3.one;
     }
 
     private void ValidateBindings()
     {
-        if (uiCanvas == null)
-            Debug.LogWarning("UIFxManager: uiCanvas not set. Assign ScorePanel or wait for ScorePanelView.BindScorePanel.");
+        if (_canvasRect == null)
+            Debug.LogWarning("UIFxManager: Root Canvas not resolved. Wait for GameplayHudPanel / ScorePanelView bind.");
 
         if (scoreBoardTarget == null)
             Debug.LogWarning("UIFxManager: scoreBoardTarget not set. Coin fly FX will be skipped.");
@@ -189,7 +216,7 @@ public class UIFxManager : MonoBehaviour
             Debug.LogError("UIFxManager: coinPrefab is not a UI prefab (missing RectTransform).");
     }
 
-    private bool TryWorldToAnchoredPosition(Vector3 worldPosition, out Vector2 anchoredPosition)
+    private bool TryWorldToCanvasAnchoredPosition(Vector3 worldPosition, out Vector2 anchoredPosition)
     {
         anchoredPosition = default;
         if (_canvasRect == null || worldCamera == null) return false;
@@ -201,14 +228,22 @@ public class UIFxManager : MonoBehaviour
             _canvasRect, screenPos, _uiEventCamera, out anchoredPosition);
     }
 
-    private bool TryRectTransformToAnchoredPosition(RectTransform target, out Vector2 anchoredPosition)
+    private bool TryRectToCanvasAnchoredPosition(RectTransform target, out Vector2 anchoredPosition)
     {
         anchoredPosition = default;
         if (target == null || _canvasRect == null) return false;
 
-        Vector3 worldCenter = target.TransformPoint(target.rect.center);
-        Vector2 screenPos = RectTransformUtility.WorldToScreenPoint(_uiEventCamera, worldCenter);
+        Vector2 screenPos = GetRectCenterScreenPoint(target, _uiEventCamera);
         return RectTransformUtility.ScreenPointToLocalPointInRectangle(
             _canvasRect, screenPos, _uiEventCamera, out anchoredPosition);
     }
+
+    private static Vector2 GetRectCenterScreenPoint(RectTransform rect, Camera eventCamera)
+    {
+        rect.GetWorldCorners(ScratchCorners);
+        Vector3 worldCenter = (ScratchCorners[0] + ScratchCorners[2]) * 0.5f;
+        return RectTransformUtility.WorldToScreenPoint(eventCamera, worldCenter);
+    }
+
+    private static readonly Vector3[] ScratchCorners = new Vector3[4];
 }

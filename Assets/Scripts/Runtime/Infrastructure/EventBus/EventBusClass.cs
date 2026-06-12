@@ -69,8 +69,10 @@ public class EventBusClass
         var type = typeof(T);
         if (eventHandlers.TryGetValue(type, out var del))
         {
-            // 将基类 Delegate 强转回具体的 Action<T>
+            // 将基类 Delegate 强转回具体的 Action<T>（例如 Action<FishKilledEvent>）
             var callback = del as Action<T>;
+
+            // eventData 是 事件类型的具体数据（例如 FishKilledEvent）
             callback?.Invoke(eventData); // 安全调用
         }
     }

@@ -27,66 +27,12 @@ MonoBehaviour:
     - {fileID: 11400000, guid: cebe758cc99a53f4eb0524533d81b965, type: 2}
     - {fileID: 11400000, guid: c7d82b4b1a5d1b642941ee6267cae542, type: 2}
     singleFishEntries:
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
-    - fishConfig: {fileID: 0}
-      count: 0
+    - fishConfig: {fileID: 11400000, guid: caa602ed43a74f849a0e4f9eb820d799, type: 2}
+      count: 1
+    - fishConfig: {fileID: 11400000, guid: b975664c39a0a6f46b4d1fefce7893c1, type: 2}
+      count: 50
+    - fishConfig: {fileID: 11400000, guid: fd793443054f61c438b1b950834613e8, type: 2}
+      count: 100
   - startTime: 30
     fishGroups:
     - {fileID: 11400000, guid: c7d82b4b1a5d1b642941ee6267cae542, type: 2}

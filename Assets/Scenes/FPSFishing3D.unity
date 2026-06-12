@@ -434,6 +434,7 @@ MonoBehaviour:
   useRaycastBlocker: 1
   timerText: {fileID: 1992688170}
   levelTitleText: {fileID: 761798792}
+  scorePanel: {fileID: 0}
 --- !u!114 &62728442
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3522,7 +3523,7 @@ MonoBehaviour:
     m_SubObjectGUID: 
     m_EditorAssetChanged: 0
   spawnInterval: 0.1
-  autoSpawnEnabled: 1
+  autoSpawnEnabled: 0
   curveStrength: 5
 --- !u!4 &1473620152
 Transform:
@@ -5088,11 +5089,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1594511929}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!223 &2038039871 stripped
-Canvas:
-  m_CorrespondingSourceObject: {fileID: 9181007134008616046, guid: 54b114a38baa57c45a26857c7920b42a, type: 3}
-  m_PrefabInstance: {fileID: 1975470336}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2044479100
 GameObject:
   m_ObjectHideFlags: 0
@@ -5271,10 +5267,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d82b06929d7ab054f9487c1406a1dbee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIFxManager
-  uiCanvas: {fileID: 2038039871}
+  uiCanvas: {fileID: 2069688641}
   worldCamera: {fileID: 2003607030}
   scoreBoardTarget: {fileID: 1061516701}
-  floatingTextOffset: {x: 100, y: -25}
+  floatingTextOffset: {x: 280, y: -25}
   coinPrefab: {fileID: 633647016357115586, guid: 28c7a51c97de32b429d1fdbcc61e72fc, type: 3}
   floatingTextPrefab: {fileID: 6083644540346864842, guid: 88bd80d4939206c49887aca16efd1efe, type: 3}
   coinInitialPoolSize: 30

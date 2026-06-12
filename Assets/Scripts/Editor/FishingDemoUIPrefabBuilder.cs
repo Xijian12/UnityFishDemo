@@ -118,6 +118,7 @@ public static class FishingDemoUIPrefabBuilder
         if (rt != null)
         {
             FishingDemoUISetup.StretchFullPublic(rt);
+            rt.pivot = new Vector2(0.5f, 0.5f);
             rt.localScale = Vector3.one;
         }
 
