@@ -2,20 +2,13 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 鱼群调度：维护活跃 FishGroup、每帧 Tick、沙盒随机刷群。
-/// 具体「生成一队鱼」交给 FishGroupSpawner；不直接 new/Instantiate 鱼，不实现单鱼逻辑。
+/// 鱼群调度：维护活跃 FishGroup、每帧 Tick。
+/// 具体「生成一队鱼」交给 FishGroupSpawner；循环刷怪由 LevelManager 按 LevelConfig 调用。
 /// </summary>
 public class FishGroupManager : MonoBehaviour
 {
-    [Header("基础配置")]
-    [SerializeField] private bool isLoop = true;
-
     [Header("依赖")]
     [SerializeField] private FishGroupSpawner fishGroupSpawner;
-
-    [Header("鱼群配置（沙盒随机刷用）")]
-    [SerializeField] private List<FishGroupConfig> groupConfigs = new List<FishGroupConfig>();
-    [SerializeField, Min(0.1f)] private float spawnInterval = 5f;
 
     private readonly List<FishGroup> activeGroups = new List<FishGroup>(8);
 
@@ -25,32 +18,11 @@ public class FishGroupManager : MonoBehaviour
     private readonly List<FishGroupConfig> spawnCandidates = new List<FishGroupConfig>(8);
     private readonly Dictionary<FishGroupConfig, int> remainWaves = new Dictionary<FishGroupConfig, int>(8);
 
-    private float spawnTimer;
+    private bool loopSpawnWaves = true;
     private int nextGroupID;
-
-    [SerializeField, Tooltip("关闭后不在此组件上自动按间隔刷鱼群")]
-    private bool autoSpawnEnabled = true;
-
-    public void SetAutoSpawnEnabled(bool enabled) => autoSpawnEnabled = enabled;
-
-    private void Start()
-    {
-        BuildSpawnPlan();
-        PreparePoolsFromInspectorList();
-    }
 
     private void Update()
     {
-        if (autoSpawnEnabled && groupConfigs != null && groupConfigs.Count > 0)
-        {
-            spawnTimer += Time.deltaTime;
-            if (spawnTimer >= spawnInterval)
-            {
-                spawnTimer = 0f;
-                SpawnRandomGroup();
-            }
-        }
-
         for (int i = activeGroups.Count - 1; i >= 0; i--)
         {
             FishGroup group = activeGroups[i];
@@ -66,15 +38,27 @@ public class FishGroupManager : MonoBehaviour
         }
     }
 
-    private void PreparePoolsFromInspectorList()
-    {
-        fishGroupSpawner?.PreparePoolsForConfigs(groupConfigs);
-    }
-
     /// <summary>关卡预加载：由 LevelManager 传入关卡内全部鱼群配置。</summary>
     public void PreparePoolsForConfigs(IEnumerable<FishGroupConfig> configs)
     {
         fishGroupSpawner?.PreparePoolsForConfigs(configs);
+    }
+
+    /// <summary>
+    /// 为 Continuous 刷怪准备候选鱼群池（通常传入关卡波次里出现的全部 FishGroupConfig）。
+    /// </summary>
+    public void ConfigureContinuousSpawn(IEnumerable<FishGroupConfig> configs, bool loopWaves)
+    {
+        loopSpawnWaves = loopWaves;
+        BuildSpawnPlan(configs);
+    }
+
+    public void ClearContinuousSpawnPlan()
+    {
+        spawnCandidates.Clear();
+        remainWaves.Clear();
+        cumulativeSpawnWeights.Clear();
+        totalSpawnWeight = 0f;
     }
 
     /// <summary>关卡波次：生成一队指定配置的鱼群。</summary>
@@ -102,25 +86,28 @@ public class FishGroupManager : MonoBehaviour
         }
     }
 
-    private void SpawnRandomGroup()
+    /// <summary>Continuous 模式：从当前候选池随机刷一队鱼群。</summary>
+    public bool TrySpawnRandomGroup()
     {
         FishGroupConfig cfg = GetRandomGroupConfig();
-        if (cfg == null) return;
+        if (cfg == null) return false;
 
-        if (SpawnFishGroup(cfg))
+        if (!SpawnFishGroup(cfg))
+            return false;
+
+        if (loopSpawnWaves)
         {
-            if (isLoop)
-            {
-                remainWaves[cfg] = cfg.spawnWaveCount;
-            }
-            else if (remainWaves.TryGetValue(cfg, out int remain))
-            {
-                remain--;
-                remainWaves[cfg] = remain;
-                if (remain <= 0)
-                    spawnCandidates.Remove(cfg);
-            }
+            remainWaves[cfg] = cfg.spawnWaveCount;
         }
+        else if (remainWaves.TryGetValue(cfg, out int remain))
+        {
+            remain--;
+            remainWaves[cfg] = remain;
+            if (remain <= 0)
+                spawnCandidates.Remove(cfg);
+        }
+
+        return true;
     }
 
     private FishGroupConfig GetRandomGroupConfig()
@@ -137,16 +124,16 @@ public class FishGroupManager : MonoBehaviour
         return null;
     }
 
-    private void BuildSpawnPlan()
+    private void BuildSpawnPlan(IEnumerable<FishGroupConfig> configs)
     {
         spawnCandidates.Clear();
         remainWaves.Clear();
         cumulativeSpawnWeights.Clear();
         totalSpawnWeight = 0f;
 
-        if (groupConfigs == null) return;
+        if (configs == null) return;
 
-        foreach (FishGroupConfig cfg in groupConfigs)
+        foreach (FishGroupConfig cfg in configs)
         {
             if (cfg == null || cfg.spawnWaveCount <= 0) continue;
             if (remainWaves.ContainsKey(cfg)) continue;
@@ -156,5 +143,15 @@ public class FishGroupManager : MonoBehaviour
             remainWaves.Add(cfg, cfg.spawnWaveCount);
             spawnCandidates.Add(cfg);
         }
+    }
+
+
+    public void RestartLevel()
+    {
+        foreach (FishGroup group in activeGroups)
+        {
+            group.ReleaseAllMemberFish();
+        }
+        activeGroups.Clear();
     }
 }

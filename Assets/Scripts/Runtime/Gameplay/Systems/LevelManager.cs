@@ -34,6 +34,9 @@ public class LevelManager : MonoBehaviour
     private readonly HashSet<int> _wavesTriggered = new HashSet<int>();
     private readonly StringBuilder _uiStringBuilder = new StringBuilder();
 
+    private bool _continuousSpawnActive;
+    private float _continuousSpawnTimer;
+
     public LevelRuntime Runtime => _runtime;
     public LevelConfig ActiveConfig => levelConfig;
 
@@ -43,10 +46,7 @@ public class LevelManager : MonoBehaviour
 
     private void Awake()
     {
-        if (waitForUI)
-            SuppressAutoSpawning();
-        else if (runLevelOnStart && levelConfig != null)
-            SuppressAutoSpawning();
+        StopSpawning();
     }
 
     private void Start()
@@ -78,7 +78,8 @@ public class LevelManager : MonoBehaviour
 
     private IEnumerator BeginLevelWhenReady(LevelConfig config)
     {
-        bool needFishDb = config.levelSpawnMode == FishSpawnMode.SingleFish;
+        bool needFishDb = config.levelSpawnMode == FishSpawnMode.SingleFish
+                          && (config.UsesWaveSpawning || config.UsesContinuousSpawning);
 
         if (needFishDb && fishManager != null)
         {
@@ -122,12 +123,19 @@ public class LevelManager : MonoBehaviour
 
         Time.timeScale = 1f;
         _runtime.currentLevelState = LevelState.Idle;
-        SuppressAutoSpawning();
+        StopSpawning();
         OnLevelStateChanged?.Invoke(LevelState.Idle);
     }
 
-    /// <summary>关闭定时刷怪（关卡波次驱动 / 主菜单待机）。</summary>
-    public void SuppressAutoSpawning() => DisableAutoSpawners();
+    /// <summary>停止循环刷怪（主菜单 / 关卡结束）。</summary>
+    public void StopSpawning()
+    {
+        _continuousSpawnActive = false;
+        fishGroupManager?.ClearContinuousSpawnPlan();
+    }
+
+    /// <summary>兼容旧调用。</summary>
+    public void SuppressAutoSpawning() => StopSpawning();
 
     public void BeginLevel(LevelConfig config)
     {
@@ -136,6 +144,9 @@ public class LevelManager : MonoBehaviour
             Debug.LogWarning("LevelManager.BeginLevel: config is null.");
             return;
         }
+        // 重启鱼群和单鱼
+        fishManager?.RestartLevel();
+        fishGroupManager?.RestartLevel();
 
         levelConfig = config;
         _wavesTriggered.Clear();
@@ -147,8 +158,7 @@ public class LevelManager : MonoBehaviour
         _runtime.currentLevelState = LevelState.Running;
 
         spawnModeController?.SetMode(config.levelSpawnMode);
-        // 关闭自动刷怪
-        SuppressAutoSpawning();
+        ApplySpawnDrive(config);
 
         if (fishGroupManager != null)
             fishGroupManager.PreparePoolsForConfigs(CollectAllFishGroupConfigs(config));
@@ -180,15 +190,57 @@ public class LevelManager : MonoBehaviour
         if (ScoreManager.Instance != null)
             _runtime.currentScore = ScoreManager.Instance.GetTotalScore();
 
-        TryTriggerWaves();
+        if (levelConfig.UsesContinuousSpawning && _continuousSpawnActive)
+            TickContinuousSpawn();
+
+        if (levelConfig.UsesWaveSpawning)
+            TryTriggerWaves();
+
         CheckWinLose();
         UpdateOptionalHud();
     }
 
-    private void DisableAutoSpawners()
+    /// <summary>
+    /// 应用刷怪模式
+    /// </summary>
+    /// <param name="config"></param>
+    /// <returns></returns>
+    private void ApplySpawnDrive(LevelConfig config)
     {
-        fishManager?.SetSingleFishAutoSpawnEnabled(false);
-        fishGroupManager?.SetAutoSpawnEnabled(false);
+        StopSpawning();
+
+        if (!config.UsesContinuousSpawning)
+            return;
+
+        _continuousSpawnActive = true;
+        _continuousSpawnTimer = 0f;
+
+        if (config.levelSpawnMode == FishSpawnMode.FishGroup)
+        {
+            fishGroupManager?.ConfigureContinuousSpawn(
+                CollectAllFishGroupConfigs(config),
+                config.loopFishGroupWaves);
+        }
+    }
+
+    /// <summary>
+    /// 持续刷怪
+    /// </summary>
+    /// <returns></returns>
+    private void TickContinuousSpawn()
+    {
+        if (levelConfig == null) return;
+
+        _continuousSpawnTimer += Time.deltaTime;
+        if (_continuousSpawnTimer < levelConfig.continuousSpawnInterval)
+            return;
+
+        _continuousSpawnTimer = 0f;
+
+        if (levelConfig.levelSpawnMode == FishSpawnMode.FishGroup)
+            fishGroupManager?.TrySpawnRandomGroup();
+        else
+            fishManager?.RequestSpawnRandomSingleFish();
     }
 
     private void TryTriggerWaves()
@@ -245,7 +297,7 @@ public class LevelManager : MonoBehaviour
         if (_runtime.currentLevelState == endState) return;
 
         _runtime.currentLevelState = endState;
-        SuppressAutoSpawning();
+        StopSpawning();
         OnLevelStateChanged?.Invoke(endState);
     }
 

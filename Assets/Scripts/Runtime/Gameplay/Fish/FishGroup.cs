@@ -208,10 +208,7 @@ public class FishGroup{
         if (fish == null || !fish.gameObject.activeInHierarchy) return;
 
         fish.SetExternalMovementControl(false);
-        if (_config != null && _config.fishConfig != null && _config.fishConfig.prefab != null && PoolManager.Instance != null)
-        {
-            PoolManager.Instance.Release(fish, _config.fishConfig.prefab);
-        }
+        fish.ReleaseToPool();
     }
 
     private static Vector3 ForceXZ(Vector3 value)
@@ -238,6 +235,15 @@ public class FishGroup{
             case FishGroupDirection.LeftDownToRightUp: return new Vector3(1f, 0f, 1f).normalized;
             case FishGroupDirection.RightDownToLeftUp: return new Vector3(-1f, 0f, 1f).normalized;
             default: return Vector3.right;
+        }
+    }
+
+    // 回收鱼群
+    public void ReleaseAllMemberFish()
+    {
+        foreach (FishGroupMember member in _members)
+        {
+            ReleaseMemberFish(member);
         }
     }
 }

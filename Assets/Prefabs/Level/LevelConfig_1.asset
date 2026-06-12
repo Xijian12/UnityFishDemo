@@ -17,6 +17,9 @@ MonoBehaviour:
   levelTargetScore: 100
   levelTime: 120
   levelSpawnMode: 1
+  spawnDriveMode: 0
+  continuousSpawnInterval: 1
+  loopFishGroupWaves: 0
   initialCanonType: 0
   initialBulletType: 0
   waveConfigs:

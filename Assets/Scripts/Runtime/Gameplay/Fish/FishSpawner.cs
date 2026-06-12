@@ -8,20 +8,13 @@ public class FishSpawner : MonoBehaviour
 {
     public AssetReferenceT<FishDatabase> fishDatabaseRef;
 
-    [SerializeField] private float spawnInterval = 1f;
-
     private readonly List<FishConfig> loadedConfigs = new();
     private readonly List<float> cumulativeWeights = new();
 
-    private float timer;
     private bool isInitialized = false;
-    [SerializeField, Tooltip("关闭后仅响应关卡/脚本显式调用生成，不自动定时刷鱼")]
-    private bool autoSpawnEnabled = true;
 
     /// <summary>数据库与对象池是否已就绪（关卡系统可等待此条件再刷怪）</summary>
     public bool IsReady => isInitialized;
-
-    public void SetAutoSpawnEnabled(bool enabled) => autoSpawnEnabled = enabled;
 
     void Start()
     {
@@ -83,22 +76,11 @@ public class FishSpawner : MonoBehaviour
         }
     }
 
-    // 定时生成一条鱼
-    void Update()
-    {
-        if (!isInitialized || !autoSpawnEnabled) return;
-
-        timer += Time.deltaTime;
-
-        if (timer >= spawnInterval)
-        {
-            timer = 0f;
-            SpawnRandomFish();
-        }
-    }
-
-    // 根据权重随机选择鱼类型
-    void SpawnRandomFish()
+    /// <summary>
+    /// 按 FishDatabase 权重随机生成一条单鱼（路径随机）。
+    /// 循环刷怪由 LevelManager 根据 LevelConfig 调度，本类不维护定时器。
+    /// </summary>
+    public void SpawnRandomFish()
     {
         if (loadedConfigs.Count == 0) return;
 

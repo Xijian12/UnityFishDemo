@@ -2,51 +2,79 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// 全局单鱼调度：活跃列表、最近鱼查询、统一 ManualUpdate。
-/// 「生成单条鱼」的请求入口转发给 FishSpawner（不在此写路径/池细节）。
+/// 单鱼调度层：维护活跃列表、驱动 ManualUpdate、转发刷怪请求。
+/// 通过事件订阅 Fish 生命周期，Fish 不反向引用本类。
 /// </summary>
 public class FishManager : MonoBehaviour
 {
-    public static FishManager Instance;
+    public static FishManager Instance { get; private set; }
 
     [Header("依赖")]
     [SerializeField] private FishSpawner fishSpawner;
 
-    public List<Fish> ActiveFish = new();
+    private readonly List<Fish> _activeFish = new();
 
-    /// <summary>供关卡等待 Addressable 数据库就绪。</summary>
+    /// <summary>只读活跃鱼列表（碰撞检测等只读遍历）。</summary>
+    public IReadOnlyList<Fish> ActiveFish => _activeFish;
+
     public bool IsFishDatabaseReady => fishSpawner != null && fishSpawner.IsReady;
-
-    /// <summary>由 LevelManager / 模式控制器统一开关定时单鱼刷怪（不走 Find）。</summary>
-    public void SetSingleFishAutoSpawnEnabled(bool enabled) =>
-        fishSpawner?.SetAutoSpawnEnabled(enabled);
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
     }
 
-    public void AddFish(Fish fish)
+    private void OnEnable()
     {
-        ActiveFish.Add(fish);
+        EventBusClass.Instance.Subscribe<FishSpawnedEvent>(OnFishSpawned);
+        EventBusClass.Instance.Subscribe<FishReleasedEvent>(OnFishReleased);
     }
 
-    public void RemoveFish(Fish fish)
+    private void OnDisable()
     {
-        ActiveFish.Remove(fish);
+        EventBusClass.Instance.Unsubscribe<FishSpawnedEvent>(OnFishSpawned);
+        EventBusClass.Instance.Unsubscribe<FishReleasedEvent>(OnFishReleased);
     }
 
-    /// <summary>
-    /// 关卡/外部请求生成一条随机路径的单鱼（具体算法在 FishSpawner）。
-    /// </summary>
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
+
+    private void Update()
+    {
+        for (int i = _activeFish.Count - 1; i >= 0; i--)
+        {
+            Fish fish = _activeFish[i];
+            if (fish == null)
+            {
+                _activeFish.RemoveAt(i);
+                continue;
+            }
+
+            fish.ManualUpdate(Time.deltaTime);
+        }
+    }
+
+    #region 刷怪请求（转发 FishSpawner）
+
+    public void RequestSpawnRandomSingleFish()
+    {
+        fishSpawner?.SpawnRandomFish();
+    }
+
     public void RequestSpawnSingleFish(FishConfig config)
     {
         fishSpawner?.SpawnFish(config);
     }
 
-    /// <summary>
-    /// 关卡波次：按条目批量请求单鱼生成。
-    /// </summary>
     public void RequestSpawnSingleFishWave(IReadOnlyList<SingleFishSpawnEntry> entries)
     {
         if (entries == null || fishSpawner == null) return;
@@ -60,15 +88,19 @@ public class FishManager : MonoBehaviour
         }
     }
 
+    #endregion
+
+    #region 查询
+
     public Fish GetNearestFish(Vector3 fromPosition, float maxDistance = float.MaxValue)
     {
         float maxSq = maxDistance * maxDistance;
         Fish nearest = null;
         float nearestSq = maxSq;
 
-        for (int i = 0; i < ActiveFish.Count; i++)
+        for (int i = 0; i < _activeFish.Count; i++)
         {
-            Fish fish = ActiveFish[i];
+            Fish fish = _activeFish[i];
             if (fish == null || fish.IsDead) continue;
 
             float sq = (fish.transform.position - fromPosition).sqrMagnitude;
@@ -82,13 +114,44 @@ public class FishManager : MonoBehaviour
         return nearest;
     }
 
-    private void Update()
+    #endregion
+
+    #region 关卡清理
+
+    /// <summary>回收所有活跃单鱼（关卡切换 / 重开）。</summary>
+    public void ClearAllFish()
     {
-        for (int i = ActiveFish.Count - 1; i >= 0; i--)
+        if (_activeFish.Count == 0) return;
+
+        var snapshot = new List<Fish>(_activeFish);
+        for (int i = 0; i < snapshot.Count; i++)
         {
-            Fish fish = ActiveFish[i];
-            if (fish != null)
-                fish.ManualUpdate(Time.deltaTime);
+            Fish fish = snapshot[i];
+            if (fish != null && fish.gameObject.activeInHierarchy)
+                fish.ReleaseToPool();
         }
+
+        _activeFish.Clear();
     }
+
+    /// <summary>兼容旧命名。</summary>
+    public void RestartLevel() => ClearAllFish();
+
+    #endregion
+
+    #region 事件
+
+    private void OnFishSpawned(FishSpawnedEvent e)
+    {
+        if (e?.Fish == null || _activeFish.Contains(e.Fish)) return;
+        _activeFish.Add(e.Fish);
+    }
+
+    private void OnFishReleased(FishReleasedEvent e)
+    {
+        if (e?.Fish == null) return;
+        _activeFish.Remove(e.Fish);
+    }
+
+    #endregion
 }

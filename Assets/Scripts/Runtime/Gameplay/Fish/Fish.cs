@@ -1,6 +1,9 @@
 using UnityEngine;
 using DG.Tweening;
 
+/// <summary>
+/// 单鱼实体：移动、战斗、表现。仅通过对象池与事件总线对外通信，不依赖 FishManager。
+/// </summary>
 public class Fish : MonoBehaviour, IPoolable
 {
     private FishConfig config;
@@ -12,16 +15,11 @@ public class Fish : MonoBehaviour, IPoolable
     private Tween damageTween;
     private Tween dieTween;
 
-    /// <summary>
-    /// 是否正在死亡
-    /// </summary>
     public bool IsDying => _fishCombat != null && _fishCombat.IsDying;
-    /// <summary>
-    /// 是否已死亡,Fish.IsDead 每次被访问时，都实时去读取 _fishCombat.IsDead 当前值，而不是在 Fish 里再存一份 bool
-    /// </summary>
     public bool IsDead => _fishCombat != null && _fishCombat.IsDead;
     public FishMovement Movement => _fishMovement;
     public Transform CachedTransform => transform;
+    public FishConfig Config => config;
 
     #region 初始化
 
@@ -31,9 +29,7 @@ public class Fish : MonoBehaviour, IPoolable
         this.config = config;
 
         if (!EnsureDependencies())
-        {
             return;
-        }
 
         float moveSpeed = speedOverride > 0f ? speedOverride : config.speed;
         _fishMovement.SetPath(p0, p1, p2, p3, moveSpeed);
@@ -45,24 +41,21 @@ public class Fish : MonoBehaviour, IPoolable
     public void OnSpawn()
     {
         if (!EnsureDependencies())
-        {
             return;
-        }
 
-        StopRunningCoroutines();
-        // 防御式重置：即使上次回收中断，这里也确保状态干净
+        StopRunningTweens();
         _fishCombat?.Reset();
         _fishVisual?.Reset(config != null ? config.spawnScale : (Vector3?)null);
 
-        FishManager.Instance?.AddFish(this);
+        EventBusClass.Instance.Publish(new FishSpawnedEvent { Fish = this });
     }
 
     public void OnRecycle()
     {
-        StopRunningCoroutines();
-        _externalMovementControl = false;
+        EventBusClass.Instance.Publish(new FishReleasedEvent { Fish = this });
 
-        FishManager.Instance?.RemoveFish(this);
+        StopRunningTweens();
+        _externalMovementControl = false;
         _fishMovement?.Reset();
         _fishCombat?.Reset();
         _fishVisual?.Reset(config != null ? config.spawnScale : (Vector3?)null);
@@ -79,14 +72,17 @@ public class Fish : MonoBehaviour, IPoolable
         if (_externalMovementControl) return;
 
         if (!_fishMovement.Tick(deltaTime))
-        {
-            SafeRelease();
-        }
+            ReleaseToPool();
+    }
+
+    public void SetExternalMovementControl(bool external)
+    {
+        _externalMovementControl = external;
     }
 
     #endregion
 
-    #region 受伤
+    #region 受伤与死亡
 
     public bool TakeDamage(int damage)
     {
@@ -107,20 +103,17 @@ public class Fish : MonoBehaviour, IPoolable
         return false;
     }
 
-    #endregion
-
-    #region 死亡
-
-    private void SafeRelease()
+    /// <summary>
+    /// 主动回收到对象池（路径结束、死亡动画完成、关卡清理等）。
+    /// </summary>
+    public void ReleaseToPool()
     {
         if (!gameObject.activeInHierarchy) return;
 
-        StopRunningCoroutines();
+        StopRunningTweens();
 
         if (config != null && config.prefab != null && PoolManager.Instance != null)
-        {
             PoolManager.Instance.Release(this, config.prefab);
-        }
     }
 
     #endregion
@@ -130,44 +123,35 @@ public class Fish : MonoBehaviour, IPoolable
     private void PlayDamageFx()
     {
         if (_fishVisual == null) return;
+
         if (damageTween != null && damageTween.IsActive())
-        {
             damageTween.Kill(false);
-        }
 
         damageTween = _fishVisual.PlayDamage();
     }
 
-    /// <summary>
-    /// 播放死亡动画
-    /// </summary>
     private void PlayDieSequence()
     {
         if (_fishVisual == null)
         {
-            SafeRelease();
+            ReleaseToPool();
             return;
         }
 
         if (dieTween != null && dieTween.IsActive())
-        {
             dieTween.Kill(false);
-        }
 
         dieTween = _fishVisual.PlayDie();
         if (dieTween == null)
         {
-            SafeRelease();
+            ReleaseToPool();
             return;
         }
 
-        dieTween.OnComplete(SafeRelease);
+        dieTween.OnComplete(ReleaseToPool);
     }
 
-    /// <summary>
-    /// 停止运行协程
-    /// </summary>
-    private void StopRunningCoroutines()
+    private void StopRunningTweens()
     {
         if (damageTween != null && damageTween.IsActive()) damageTween.Kill(false);
         if (dieTween != null && dieTween.IsActive()) dieTween.Kill(false);
@@ -187,9 +171,6 @@ public class Fish : MonoBehaviour, IPoolable
         return true;
     }
 
-    /// <summary>
-    /// 缓存组件
-    /// </summary>
     private void CacheComponents()
     {
         if (_fishMovement == null)
@@ -200,9 +181,6 @@ public class Fish : MonoBehaviour, IPoolable
             _fishVisual = GetComponent<FishVisual>();
     }
 
-    /// <summary>
-    /// 发布鱼死亡事件
-    /// </summary>
     private void PublishFishKilledEvent()
     {
         if (_fishCombat == null) return;
@@ -213,11 +191,6 @@ public class Fish : MonoBehaviour, IPoolable
             Score = _fishCombat.GetScore(),
             Position = transform.position
         });
-    }
-
-    public void SetExternalMovementControl(bool external)
-    {
-        _externalMovementControl = external;
     }
 
     #endregion
