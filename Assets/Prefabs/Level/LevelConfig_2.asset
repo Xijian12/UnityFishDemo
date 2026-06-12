@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2459e1a85bca01f47bbefc4210cebfbf, type: 3}
-  m_Name: LevelConfig_1
+  m_Name: LevelConfig_2
   m_EditorClassIdentifier: Assembly-CSharp::LevelConfig
-  levelType: 0
-  levelIndex: 1
-  levelTargetScore: 100
-  levelTime: 120
-  levelSpawnMode: 1
+  levelType: 4
+  levelIndex: 2
+  levelTargetScore: 200
+  levelTime: 90
+  levelSpawnMode: 0
   initialCanonType: 0
   initialBulletType: 0
   waveConfigs:

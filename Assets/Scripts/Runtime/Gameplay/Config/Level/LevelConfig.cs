@@ -20,4 +20,25 @@ public class LevelConfig : ScriptableObject
 
     [Header("波次配置")]
     public List<WaveConfig> waveConfigs;         // 波次配置
+
+    public string GetDisplayTitle()
+    {
+        return $"Level {levelIndex}";
+    }
+
+    public string GetSelectListLabel()
+    {
+        return $"{GetDisplayTitle()} · {levelType} · {GetSpawnModeLabel()}\n" +
+               $"Target {levelTargetScore} pts · {levelTime:F0}s";
+    }
+
+    public string GetHudSubtitle()
+    {
+        return $"{levelType} · {GetSpawnModeLabel()}";
+    }
+
+    public string GetSpawnModeLabel()
+    {
+        return levelSpawnMode == FishSpawnMode.FishGroup ? "Fish Group" : "Single Fish";
+    }
 }

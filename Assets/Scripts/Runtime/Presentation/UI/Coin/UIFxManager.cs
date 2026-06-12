@@ -2,12 +2,6 @@ using UnityEngine;
 
 /// <summary>
 /// UI 特效管理器（金币 + 浮动加分文字）。
-///
-/// 设计目标：
-/// 1) 订阅鱼死亡事件，作为唯一 UI 表现入口。
-/// 2) 负责坐标转换（世界坐标 -> UI anchored 坐标）。
-/// 3) 负责从对象池取出/回收金币与浮字对象。
-/// 4) 不处理游戏分数累加逻辑（由 ScoreManager 单独负责）。
 /// </summary>
 public class UIFxManager : MonoBehaviour
 {
@@ -18,9 +12,7 @@ public class UIFxManager : MonoBehaviour
     [SerializeField] private Camera worldCamera;
 
     [Header("计分板锚点")]
-    [Tooltip("计分板 RectTransform，金币飞行目标点。")]
     [SerializeField] private RectTransform scoreBoardTarget;
-    [Tooltip("浮动文字相对计分板目标点的偏移（右侧显示）。")]
     [SerializeField] private Vector2 floatingTextOffset = new Vector2(100f, -25f);
 
     [Header("预制体（需实现 IPoolable）")]
@@ -38,29 +30,20 @@ public class UIFxManager : MonoBehaviour
 
     private RectTransform _canvasRect;
     private Camera _uiEventCamera;
+    private ScorePanelView _boundScorePanel;
+    private bool _poolsCreated;
 
     private void Awake()
     {
         Instance = this;
-
-        if (uiCanvas == null)
-            uiCanvas = GetComponentInParent<Canvas>();
-        if (uiCanvas != null && uiCanvas.rootCanvas != null)
-            uiCanvas = uiCanvas.rootCanvas;
-        if (worldCamera == null)
-            worldCamera = Camera.main;
-
-        _canvasRect = uiCanvas != null ? uiCanvas.GetComponent<RectTransform>() : null;
-        _uiEventCamera = (uiCanvas != null && uiCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
-            ? null
-            : uiCanvas != null ? uiCanvas.worldCamera : null;
-
+        ResolveCamera();
+        RefreshCanvasState();
         ValidateBindings();
     }
 
     private void Start()
     {
-        CreatePools();
+        EnsurePools();
     }
 
     private void OnEnable()
@@ -75,31 +58,39 @@ public class UIFxManager : MonoBehaviour
         EventBusClass.Instance.Unsubscribe<CoinArrivedEvent>(OnCoinArrived);
     }
 
-    /// <summary>
-    /// 鱼死亡 UI 入口：
-    /// 1) 世界坐标转 UI 坐标
-    /// 2) 从池中取金币并发射
-    /// </summary>
+    public void BindScorePanel(ScorePanelView view)
+    {
+        if (view == null) return;
+
+        _boundScorePanel = view;
+        uiCanvas = view.PanelCanvas;
+        scoreBoardTarget = view.CoinFlyTarget;
+        RefreshCanvasState();
+        ValidateBindings();
+        EnsurePools();
+    }
+
+    public void UnbindScorePanel(ScorePanelView view)
+    {
+        if (_boundScorePanel != view) return;
+        _boundScorePanel = null;
+    }
+
     private void OnFishKilled(FishKilledEvent fishKilledEvent)
     {
-        if (uiCanvas == null || _canvasRect == null || scoreBoardTarget == null || coinPrefab == null)
-            return;
-        if (worldCamera == null)
-            return;
-        if (PoolManager.Instance == null)
-            return;
+        if (!IsReadyForCoinFx()) return;
 
         if (!TryWorldToAnchoredPosition(fishKilledEvent.Position, out Vector2 startAnchoredPos))
             return;
 
-        if (!TryScreenToAnchoredPosition(scoreBoardTarget.position, out Vector2 targetAnchoredPos))
+        if (!TryRectTransformToAnchoredPosition(scoreBoardTarget, out Vector2 targetAnchoredPos))
             return;
 
         CoinUIFx coinFx = PoolManager.Instance.Get<CoinUIFx>(coinPrefab);
         if (coinFx == null) return;
 
-        // 确保对象池取出的金币始终挂在目标 Canvas 下，避免层级/坐标系污染。
-        coinFx.transform.SetParent(uiCanvas.transform, false);
+        Transform coinParent = _canvasRect;
+        coinFx.transform.SetParent(coinParent, false);
         coinFx.transform.SetAsLastSibling();
 
         coinFx.Initialize(
@@ -111,10 +102,6 @@ public class UIFxManager : MonoBehaviour
         coinFx.Launch();
     }
 
-    /// <summary>
-    /// 由事件总线在“金币到达计分板”时触发。
-    /// 在计分板右侧生成 +score 浮动文字。
-    /// </summary>
     private void OnCoinArrived(CoinArrivedEvent coinArrivedEvent)
     {
         if (floatingTextPrefab == null || scoreBoardTarget == null || _canvasRect == null)
@@ -122,13 +109,13 @@ public class UIFxManager : MonoBehaviour
         if (PoolManager.Instance == null)
             return;
 
-        if (!TryScreenToAnchoredPosition(scoreBoardTarget.position, out Vector2 scoreBoardAnchoredPos))
+        if (!TryRectTransformToAnchoredPosition(scoreBoardTarget, out Vector2 scoreBoardAnchoredPos))
             return;
 
         FloatingScoreTextFx textFx = PoolManager.Instance.Get<FloatingScoreTextFx>(floatingTextPrefab);
         if (textFx == null) return;
 
-        textFx.transform.SetParent(uiCanvas.transform, false);
+        textFx.transform.SetParent(_canvasRect, false);
         textFx.transform.SetAsLastSibling();
 
         textFx.Initialize(
@@ -138,21 +125,28 @@ public class UIFxManager : MonoBehaviour
         textFx.Launch();
     }
 
-    /// <summary>
-    /// 创建对象池
-    /// </summary>
-    private void CreatePools()
+    private bool IsReadyForCoinFx()
     {
-        if (PoolManager.Instance == null) return;
+        return uiCanvas != null
+               && _canvasRect != null
+               && scoreBoardTarget != null
+               && coinPrefab != null
+               && worldCamera != null
+               && PoolManager.Instance != null;
+    }
 
-        if (coinPrefab != null)
-        {
-            PoolManager.Instance.CreatePool<CoinUIFx>(
-                coinPrefab,
-                coinInitialPoolSize,
-                coinMaxPoolSize,
-                uiCanvas != null ? uiCanvas.transform : transform);
-        }
+    private void EnsurePools()
+    {
+        if (_poolsCreated || PoolManager.Instance == null) return;
+        if (uiCanvas == null || coinPrefab == null) return;
+
+        Transform poolParent = _canvasRect != null ? _canvasRect : uiCanvas.transform;
+
+        PoolManager.Instance.CreatePool<CoinUIFx>(
+            coinPrefab,
+            coinInitialPoolSize,
+            coinMaxPoolSize,
+            poolParent);
 
         if (floatingTextPrefab != null)
         {
@@ -160,56 +154,61 @@ public class UIFxManager : MonoBehaviour
                 floatingTextPrefab,
                 textInitialPoolSize,
                 textMaxPoolSize,
-                uiCanvas != null ? uiCanvas.transform : transform);
+                poolParent);
         }
+
+        _poolsCreated = true;
     }
 
-    /// <summary>
-    /// 运行前检查关键绑定，防止“对象激活但不可见”。
-    /// </summary>
+    private void ResolveCamera()
+    {
+        if (worldCamera == null)
+            worldCamera = Camera.main;
+    }
+
+    private void RefreshCanvasState()
+    {
+        if (uiCanvas == null)
+            uiCanvas = GetComponentInParent<Canvas>();
+
+        _canvasRect = uiCanvas != null ? uiCanvas.GetComponent<RectTransform>() : null;
+        _uiEventCamera = uiCanvas != null && uiCanvas.renderMode != RenderMode.ScreenSpaceOverlay
+            ? uiCanvas.worldCamera
+            : null;
+    }
+
     private void ValidateBindings()
     {
         if (uiCanvas == null)
-        {
-            Debug.LogError("UIFxManager: uiCanvas 未设置，金币 UI 无法显示。");
-            return;
-        }
+            Debug.LogWarning("UIFxManager: uiCanvas not set. Assign ScorePanel or wait for ScorePanelView.BindScorePanel.");
 
-        if (_canvasRect == null)
-        {
-            Debug.LogError("UIFxManager: uiCanvas 缺少 RectTransform。");
-            return;
-        }
-
-        if (_canvasRect.lossyScale.sqrMagnitude < 0.0001f)
-        {
-            Debug.LogWarning("UIFxManager: 当前 Canvas 缩放接近 0，UI 可能不可见，请检查 Canvas 层级缩放。");
-        }
+        if (scoreBoardTarget == null)
+            Debug.LogWarning("UIFxManager: scoreBoardTarget not set. Coin fly FX will be skipped.");
 
         if (coinPrefab != null && coinPrefab.GetComponent<RectTransform>() == null)
-        {
-            Debug.LogError("UIFxManager: coinPrefab 不是 UI 预制体（缺少 RectTransform）。当前系统为 2D UI 坐标系金币方案。");
-        }
+            Debug.LogError("UIFxManager: coinPrefab is not a UI prefab (missing RectTransform).");
     }
 
-    /// <summary>
-    /// 世界坐标 -> 当前 Canvas 的 anchored 坐标。
-    /// </summary>
     private bool TryWorldToAnchoredPosition(Vector3 worldPosition, out Vector2 anchoredPosition)
     {
         anchoredPosition = default;
+        if (_canvasRect == null || worldCamera == null) return false;
+
         Vector3 screenPos = worldCamera.WorldToScreenPoint(worldPosition);
+        if (screenPos.z < 0f) return false;
+
         return RectTransformUtility.ScreenPointToLocalPointInRectangle(
             _canvasRect, screenPos, _uiEventCamera, out anchoredPosition);
     }
 
-    /// <summary>
-    /// 屏幕坐标 -> Canvas anchored 坐标。
-    /// </summary>
-    private bool TryScreenToAnchoredPosition(Vector3 screenPosition, out Vector2 anchoredPosition)
+    private bool TryRectTransformToAnchoredPosition(RectTransform target, out Vector2 anchoredPosition)
     {
         anchoredPosition = default;
+        if (target == null || _canvasRect == null) return false;
+
+        Vector3 worldCenter = target.TransformPoint(target.rect.center);
+        Vector2 screenPos = RectTransformUtility.WorldToScreenPoint(_uiEventCamera, worldCenter);
         return RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            _canvasRect, screenPosition, _uiEventCamera, out anchoredPosition);
+            _canvasRect, screenPos, _uiEventCamera, out anchoredPosition);
     }
 }

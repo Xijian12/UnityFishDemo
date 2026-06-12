@@ -1,4 +1,3 @@
-using System.Collections;
 using TMPro;
 using UnityEngine;
 using DG.Tweening;
@@ -12,11 +11,13 @@ public class ScoreManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI niceText;
     [SerializeField] private TopDownCameraController topDownCamera;
 
+    private ScorePanelView _panelView;
     private Tween comboTween;
     private Tween niceTween;
-    private int totalScore = 0;
-    private int comboCount = 0;
-    private float lastKillTime = 0f;
+    private int totalScore;
+    private int targetScore;
+    private int comboCount;
+    private float lastKillTime;
 
     private void Awake()
     {
@@ -47,26 +48,44 @@ public class ScoreManager : MonoBehaviour
         EventBusClass.Instance.Unsubscribe<FishKilledEvent>(AddScore);
     }
 
+    public void BindPanel(ScorePanelView view)
+    {
+        if (view == null) return;
+        _panelView = view;
+        ApplyPanelReferences(view);
+        UpdateScoreDisplay(totalScore);
+    }
+
+    public void UnbindPanel(ScorePanelView view)
+    {
+        if (_panelView != view) return;
+        _panelView = null;
+    }
+
+    public void SetTargetScore(int target)
+    {
+        targetScore = Mathf.Max(0, target);
+        UpdateScoreDisplay(totalScore);
+    }
+
     public void AddScore(FishKilledEvent fishKilledEvent)
     {
         totalScore += fishKilledEvent.Score;
         UpdateScoreDisplay(totalScore);
 
         float time = Time.time;
-
-        if (time - lastKillTime <= 1f)
-            comboCount++;
-        else
-            comboCount = 1;
-
+        comboCount = time - lastKillTime <= 1f ? comboCount + 1 : 1;
         lastKillTime = time;
-
         UpdateCombo();
     }
 
-    /// <summary>
-    /// 更新combo
-    /// </summary>
+    private void ApplyPanelReferences(ScorePanelView view)
+    {
+        scoreText = view.CurScoreNum ?? scoreText;
+        comboText = view.ComboText ?? comboText;
+        niceText = view.NiceText ?? niceText;
+    }
+
     private void UpdateCombo()
     {
         if (comboText == null) return;
@@ -85,7 +104,6 @@ public class ScoreManager : MonoBehaviour
 
         if (comboCount >= 3)
         {
-            // 震动相机
             if (topDownCamera != null)
                 topDownCamera.PlayShake();
 
@@ -105,18 +123,22 @@ public class ScoreManager : MonoBehaviour
     public void ResetScore()
     {
         totalScore = 0;
+        comboCount = 0;
         UpdateScoreDisplay(totalScore);
     }
 
-    /// <summary>当前总分（关卡胜负与 HUD 同步用）</summary>
     public int GetTotalScore() => totalScore;
 
     private void UpdateScoreDisplay(int score)
     {
-        if (scoreText != null)
+        if (_panelView != null)
         {
-            scoreText.SetText($"{score}");
+            _panelView.SetScoreDisplay(score, targetScore);
+            return;
         }
+
+        if (scoreText != null)
+            scoreText.SetText(targetScore > 0 ? $"{score}/{targetScore}" : score.ToString());
     }
 
     private void OnDestroy()

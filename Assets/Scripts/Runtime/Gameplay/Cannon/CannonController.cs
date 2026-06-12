@@ -20,6 +20,7 @@ public class CannonController : MonoBehaviour
     [SerializeField] private FireMode fireMode = FireMode.Manual;
     [SerializeField] private float fireInterval = 0.3f;
     [SerializeField] private BulletType currentBulletType = BulletType.SmallBullet;
+    [SerializeField] private CanonType currentCanonType = CanonType.Single;
 
     [Header("自动追踪的最大距离")]
     [SerializeField] private float maxTrackDistance = 50f;
@@ -29,6 +30,14 @@ public class CannonController : MonoBehaviour
 
     private void Update()
     {
+        if (Time.timeScale <= 0f) return;
+
+        if (UIInputGuard.ShouldBlockGameplayInput())
+        {
+            _isManualFiring = false;
+            return;
+        }
+
         UpdateAimVisual();
         HandleManualInput();
 
@@ -57,11 +66,10 @@ public class CannonController : MonoBehaviour
     private void HandleManualInput()
     {
         if (fireMode != FireMode.Manual) return;
+        if (UIInputGuard.IsPointerOverUI()) return;
 
         if (Input.GetMouseButtonDown(0))
-        {
             _isManualFiring = !_isManualFiring;
-        }
     }
 
     private bool ShouldFire()
@@ -174,6 +182,12 @@ public class CannonController : MonoBehaviour
     /// </summary>
     /// <param name="type">子弹类型</param>
     public void SetBulletType(BulletType type) => currentBulletType = type;
+
+    public CanonType CurrentCanonType => currentCanonType;
+
+    public void SetCanonType(CanonType type) => currentCanonType = type;
+
+    public void StopManualFiring() => _isManualFiring = false;
 
     /// <summary>
     /// 是否正在手动发射

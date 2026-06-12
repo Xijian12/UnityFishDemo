@@ -11,9 +11,14 @@ using UnityEngine;
 public class LevelManager : MonoBehaviour
 {
     [Header("关卡")]
+    [Tooltip("UI 选关前的默认配置；BeginLevel 后会被所选 LevelConfig 覆盖")]
     [SerializeField] private LevelConfig levelConfig;
-    [Tooltip("进入场景后自动开始关卡")]
+    [Tooltip("关卡目录，用于 UI 选关校验（与 UIManager.levelCatalog 保持一致）")]
+    [SerializeField] private LevelCatalogConfig levelCatalog;
+    [Tooltip("进入场景后自动开始关卡（使用 UIManager 时请关闭并勾选 waitForUI）")]
     [SerializeField] private bool runLevelOnStart = true;
+    [Tooltip("勾选后等待 UIManager 选择关卡，不自动 BeginLevel")]
+    [SerializeField] private bool waitForUI;
 
     [Header("引用（须在 Inspector 绑定，禁止使用 Find）")]
     [SerializeField] private FishManager fishManager;
@@ -33,23 +38,47 @@ public class LevelManager : MonoBehaviour
     public LevelConfig ActiveConfig => levelConfig;
 
     public event System.Action<LevelState> OnLevelStateChanged;
+    /// <summary>每帧 Running 时推送 HUD 数据（currentScore、remainingTime）。</summary>
+    public event System.Action<LevelRuntime, float> OnHudUpdate;
 
     private void Awake()
     {
-        if (runLevelOnStart && levelConfig != null)
-            DisableAutoSpawners();
+        if (waitForUI)
+            SuppressAutoSpawning();
+        else if (runLevelOnStart && levelConfig != null)
+            SuppressAutoSpawning();
     }
 
     private void Start()
     {
-        if (runLevelOnStart && levelConfig != null)
-            StartCoroutine(StartLevelWhenReady());
+        if (!waitForUI && runLevelOnStart && levelConfig != null)
+            RequestBeginLevel(levelConfig);
     }
 
-    private IEnumerator StartLevelWhenReady()
+    public void SetLevelCatalog(LevelCatalogConfig catalog) => levelCatalog = catalog;
+
+    /// <summary>UI / 外部系统请求开始关卡（含数据库就绪等待）。</summary>
+    public bool RequestBeginLevel(LevelConfig config)
     {
-        bool needFishDb = levelConfig != null &&
-                          levelConfig.levelSpawnMode == FishSpawnMode.SingleFish;
+        if (config == null)
+        {
+            Debug.LogWarning("LevelManager.RequestBeginLevel: config is null.");
+            return false;
+        }
+
+        if (waitForUI && levelCatalog != null && !levelCatalog.Contains(config))
+        {
+            Debug.LogWarning($"LevelManager: '{config.name}' 不在 LevelCatalog 中，拒绝启动。");
+            return false;
+        }
+
+        StartCoroutine(BeginLevelWhenReady(config));
+        return true;
+    }
+
+    private IEnumerator BeginLevelWhenReady(LevelConfig config)
+    {
+        bool needFishDb = config.levelSpawnMode == FishSpawnMode.SingleFish;
 
         if (needFishDb && fishManager != null)
         {
@@ -65,8 +94,40 @@ public class LevelManager : MonoBehaviour
                 Debug.LogError("LevelManager: FishSpawner 数据库未就绪（检查 FishManager→FishSpawner、Addressables）。");
         }
 
-        BeginLevel(levelConfig);
+        BeginLevel(config);
     }
+
+    public void PauseLevel()
+    {
+        if (_runtime.currentLevelState != LevelState.Running) return;
+
+        _runtime.currentLevelState = LevelState.Paused;
+        Time.timeScale = 0f;
+        OnLevelStateChanged?.Invoke(LevelState.Paused);
+    }
+
+    public void ResumeLevel()
+    {
+        if (_runtime.currentLevelState != LevelState.Paused) return;
+
+        _runtime.currentLevelState = LevelState.Running;
+        Time.timeScale = 1f;
+        OnLevelStateChanged?.Invoke(LevelState.Running);
+    }
+
+    /// <summary>返回主菜单时中止当前关卡。</summary>
+    public void AbortLevel()
+    {
+        if (_runtime.currentLevelState == LevelState.Idle) return;
+
+        Time.timeScale = 1f;
+        _runtime.currentLevelState = LevelState.Idle;
+        SuppressAutoSpawning();
+        OnLevelStateChanged?.Invoke(LevelState.Idle);
+    }
+
+    /// <summary>关闭定时刷怪（关卡波次驱动 / 主菜单待机）。</summary>
+    public void SuppressAutoSpawning() => DisableAutoSpawners();
 
     public void BeginLevel(LevelConfig config)
     {
@@ -80,18 +141,25 @@ public class LevelManager : MonoBehaviour
         _wavesTriggered.Clear();
 
         ScoreManager.Instance?.ResetScore();
+        ScoreManager.Instance?.SetTargetScore(config.levelTargetScore);
 
         _runtime.Init(config);
         _runtime.currentLevelState = LevelState.Running;
 
         spawnModeController?.SetMode(config.levelSpawnMode);
-        DisableAutoSpawners();
+        // 关闭自动刷怪
+        SuppressAutoSpawning();
 
         if (fishGroupManager != null)
             fishGroupManager.PreparePoolsForConfigs(CollectAllFishGroupConfigs(config));
 
+        // 设置初始武器
         cannonController?.SetBulletType(config.initialBulletType);
+        cannonController?.SetCanonType(config.initialCanonType);
+        _runtime.currentCanonType = config.initialCanonType;
+        _runtime.currentBulletType = config.initialBulletType;
 
+        Time.timeScale = 1f;
         UpdateOptionalHud();
         OnLevelStateChanged?.Invoke(LevelState.Running);
     }
@@ -177,7 +245,7 @@ public class LevelManager : MonoBehaviour
         if (_runtime.currentLevelState == endState) return;
 
         _runtime.currentLevelState = endState;
-        DisableAutoSpawners();
+        SuppressAutoSpawning();
         OnLevelStateChanged?.Invoke(endState);
     }
 
@@ -190,6 +258,8 @@ public class LevelManager : MonoBehaviour
 
     private void UpdateOptionalHud()
     {
+        OnHudUpdate?.Invoke(_runtime, GetRemainingTime());
+
         if (timerText != null && levelConfig != null && _runtime.currentLevelState == LevelState.Running)
         {
             _uiStringBuilder.Clear();
